@@ -1,0 +1,3450 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>El Eco del Silencio — Sopó</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&family=Barlow:ital,wght@0,300;0,400;0,600;1,300&family=Crimson+Text:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --accent: #25d366;
+  --accent-dim: #128c4e;
+  --danger: #e94560;
+  --bg: #000000;
+  --phone-border: #1a1a1a;
+  --screen-bg: #0b141a;
+  --chat-header: #1f2c34;
+  --bubble-in: #202c33;
+  --bubble-out: #005c4b;
+  --text: #e8e8e8;
+  --sub: rgba(255,255,255,0.45);
+  --vol: 1;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  width:100%; height:100%; overflow:hidden;
+  background:#000;
+  font-family:'Barlow',sans-serif;
+  color:var(--text);
+}
+
+/* ─── WORLD ─── */
+#world {
+  position:fixed; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  background: #000;
+  transition: background 4s ease;
+  overflow: hidden;
+}
+
+/* Sky blue diffuse glow behind phone */
+#world::before {
+  content:'';
+  position:absolute; inset:0;
+  background: radial-gradient(ellipse 48% 62% at 50% 50%, rgba(100,180,255,0.08) 0%, rgba(45,95,180,0.04) 38%, transparent 64%);
+  pointer-events:none; z-index:0;
+  animation: skyPulse 8s ease-in-out infinite;
+}
+@keyframes skyPulse {
+  0%,100%{opacity:0.7} 50%{opacity:1}
+}
+
+/* Dark vignette edges */
+#world::after {
+  content:'';
+  position:absolute; inset:0;
+  background: radial-gradient(ellipse 58% 78% at 50% 50%, transparent 36%, rgba(0,0,0,0.94) 88%);
+  pointer-events:none; z-index:2;
+}
+
+#atmosphere-glow {
+  position:absolute; inset:0; z-index:1;
+  pointer-events:none;
+  transition: background 3s ease;
+}
+
+/* ─── PHONE HARDWARE ─── */
+#phone-wrapper {
+  position: relative; z-index: 10;
+  display: none;
+}
+
+/* Side buttons */
+.phone-btn {
+  position: absolute;
+  background: #2a2a2a;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.1s, transform 0.1s;
+  z-index: 20;
+}
+.phone-btn:active { transform: scaleX(0.85); background: #1a1a1a; }
+
+#btn-power {
+  right: -6px; top: 140px;
+  width: 5px; height: 48px;
+  border-radius: 0 3px 3px 0;
+}
+#btn-vol-up {
+  left: -6px; top: 120px;
+  width: 5px; height: 38px;
+  border-radius: 3px 0 0 3px;
+}
+#btn-vol-down {
+  left: -6px; top: 168px;
+  width: 5px; height: 38px;
+  border-radius: 3px 0 0 3px;
+}
+
+/* Volume indicator */
+#vol-indicator {
+  position: fixed; top: 20px; right: 20px;
+  background: rgba(0,0,0,0.7); border-radius: 12px;
+  padding: 8px 14px; z-index: 9999;
+  font-size: 0.75rem; color: #fff;
+  display: none;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+#phone {
+  position:relative; z-index:10;
+  width:320px; height:660px;
+  background:#111;
+  border-radius:44px;
+  padding:10px;
+  border:3px solid #1e1e1e;
+  box-shadow:
+    0 0 0 1px #0a0a0a,
+    0 0 60px rgba(0,0,0,0.9),
+    0 0 120px rgba(0,0,0,0.7),
+    0 0 200px rgba(100,180,255,0.08),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+  transition: filter 3s ease, box-shadow 3s ease;
+}
+
+/* Phone off overlay */
+#phone-off-overlay {
+  position: absolute; inset: 0;
+  background: #000;
+  border-radius: 36px;
+  z-index: 100;
+  display: none;
+  align-items: center; justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+}
+#phone-off-overlay .power-icon { font-size: 2rem; opacity: 0.3; }
+#phone-off-overlay .power-hint { font-size: 0.65rem; color: rgba(255,255,255,0.25); letter-spacing: 0.1em; }
+
+#phone-screen {
+  width:100%; height:100%;
+  background:#000;
+  border-radius:36px;
+  overflow:hidden;
+  position:relative;
+  display:flex; flex-direction:column;
+}
+
+/* Fix screens to not overflow past nav bar */
+#screen-home, #screen-chatlist, #screen-chat, #screen-camera, #screen-music, #screen-web {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* phone notch */
+#phone::after {
+  content:'';
+  position:absolute;
+  top:18px; left:50%; transform:translateX(-50%);
+  width:90px; height:6px;
+  background:#000;
+  border-radius:3px;
+  z-index:20;
+}
+
+/* ─── STATUS BAR ─── */
+.status-bar {
+  background: #000;
+  padding:8px 20px 4px;
+  display:flex; justify-content:space-between; align-items:center;
+  font-size:0.6rem; font-weight:700; letter-spacing:0.05em;
+  color:#fff; flex-shrink:0; position:relative; z-index:5;
+}
+.status-right { display:flex; gap:5px; align-items:center; }
+#vol-icon { font-size: 0.7rem; }
+
+/* ─── HOME SCREEN ─── */
+#screen-home {
+  flex:1;
+  background: linear-gradient(180deg, #0d1117 0%, #070a0e 100%);
+  display:flex; flex-direction:column; align-items:center;
+  padding-top: 30px;
+  position:relative; overflow:hidden;
+}
+#screen-home::before {
+  content:'';
+  position:absolute; top:-50px; left:50%; transform:translateX(-50%);
+  width:300px; height:300px;
+  background: radial-gradient(circle, rgba(37,211,102,0.06) 0%, transparent 70%);
+  pointer-events:none;
+}
+.home-time { font-size:3.4rem; font-weight:200; letter-spacing:-2px; color:#fff; margin-bottom:2px; }
+.home-date { font-size:0.75rem; color:var(--sub); letter-spacing:0.05em; }
+
+.home-apps {
+  position:absolute; bottom:30px; left:50%; transform:translateX(-50%);
+  display:flex; gap:16px;
+}
+.app-icon {
+  width:52px; height:52px; border-radius:14px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.5rem; cursor:pointer;
+  background:rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.06);
+  transition:transform 0.15s;
+  position:relative;
+}
+.app-icon:active { transform:scale(0.92); }
+.app-badge {
+  position:absolute; top:-4px; right:-4px;
+  width:18px; height:18px; border-radius:50%;
+  background:var(--danger); color:#fff;
+  font-size:0.55rem; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+  border:2px solid #111;
+}
+
+/* ─── LOCK NOTIFICATION ─── */
+#lock-notification {
+  position:absolute; top:90px; left:12px; right:12px;
+  background:rgba(30,30,30,0.92);
+  backdrop-filter:blur(20px);
+  border-radius:14px;
+  padding:12px 14px;
+  display:none;
+  animation: slideDown 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  cursor:pointer; z-index:30;
+  border:1px solid rgba(255,255,255,0.08);
+}
+@keyframes slideDown { from{transform:translateY(-30px);opacity:0} to{transform:translateY(0);opacity:1} }
+.notif-row { display:flex; align-items:center; gap:10px; }
+.notif-icon { width:28px; height:28px; border-radius:7px; background:#25d366; display:flex; align-items:center; justify-content:center; font-size:0.9rem; flex-shrink:0; }
+.notif-body { flex:1; min-width:0; }
+.notif-app { font-size:0.6rem; font-weight:700; color:var(--sub); letter-spacing:0.08em; text-transform:uppercase; }
+.notif-preview { font-size:0.78rem; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
+.notif-time { font-size:0.6rem; color:var(--sub); flex-shrink:0; }
+
+/* ─── WHATSAPP CHAT LIST ─── */
+#screen-chatlist {
+  flex:1; display:none; flex-direction:column;
+  background: var(--screen-bg);
+}
+.wa-header {
+  background:var(--chat-header);
+  padding:40px 16px 12px;
+  display:flex; justify-content:space-between; align-items:center;
+  flex-shrink:0;
+}
+.wa-header h2 { font-family:'Barlow'; font-weight:700; font-size:1.1rem; color:#fff; }
+.wa-header-icons { display:flex; gap:18px; }
+.wa-header-icons span { font-size:1.1rem; cursor:pointer; color:rgba(255,255,255,0.7); }
+#wa-menu {
+  position:absolute;
+  right:12px;
+  top:68px;
+  min-width:150px;
+  background:#202c33;
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:12px;
+  overflow:hidden;
+  display:none;
+  z-index:40;
+  box-shadow:0 18px 30px rgba(0,0,0,0.4);
+}
+#wa-menu div {
+  padding:11px 14px;
+  font-size:0.78rem;
+  color:#fff;
+  cursor:pointer;
+  border-bottom:1px solid rgba(255,255,255,0.05);
+}
+#wa-menu div:last-child { border-bottom:none; }
+#wa-menu div:hover { background:rgba(255,255,255,0.05); }
+
+.chat-list { flex:1; overflow-y:auto; }
+.chat-list::-webkit-scrollbar { width:0; }
+.chat-list-item {
+  display:flex; align-items:center; gap:12px;
+  padding:10px 14px;
+  cursor:pointer;
+  border-bottom:1px solid rgba(255,255,255,0.04);
+  transition:background 0.15s;
+  position:relative;
+}
+.chat-list-item:active { background:rgba(255,255,255,0.05); }
+.chat-avatar {
+  width:48px; height:48px; border-radius:50%; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.3rem; font-weight:700; color:#fff;
+}
+.chat-list-info { flex:1; min-width:0; }
+.chat-list-name { font-size:0.88rem; font-weight:600; color:#fff; margin-bottom:2px; }
+.chat-list-preview { font-size:0.75rem; color:var(--sub); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.chat-list-meta { text-align:right; flex-shrink:0; }
+.chat-list-time { font-size:0.62rem; color:var(--sub); margin-bottom:4px; }
+.chat-list-badge {
+  background:var(--accent); color:#fff;
+  font-size:0.6rem; font-weight:700; border-radius:50%;
+  width:18px; height:18px; display:flex; align-items:center; justify-content:center;
+  margin-left:auto;
+}
+
+/* ─── CHAT SCREEN ─── */
+#screen-chat {
+  flex:1; display:none; flex-direction:column;
+  background:var(--screen-bg);
+}
+.chat-header-bar {
+  background:var(--chat-header);
+  padding:38px 10px 10px;
+  display:flex; align-items:center; gap:10px;
+  flex-shrink:0;
+}
+.chat-back { font-size:1.2rem; cursor:pointer; color:rgba(255,255,255,0.7); padding:0 4px; }
+.chat-header-info { flex:1; }
+.chat-header-name { font-size:0.9rem; font-weight:700; color:#fff; }
+.chat-header-sub { font-size:0.65rem; color:var(--sub); margin-top:1px; }
+.chat-header-more { font-size:1.2rem; cursor:pointer; color:rgba(255,255,255,0.7); position:relative; }
+
+#context-menu {
+  position:absolute; top:35px; right:10px;
+  background:#233138; border-radius:8px;
+  padding:4px 0;
+  z-index:50; display:none;
+  min-width:140px;
+  box-shadow:0 4px 20px rgba(0,0,0,0.5);
+}
+#context-menu div {
+  padding:10px 16px;
+  font-size:0.8rem; color:#fff; cursor:pointer;
+}
+#context-menu div:hover { background:rgba(255,255,255,0.08); }
+#context-menu div.danger { color:var(--danger); }
+
+.chat-wallpaper {
+  position:absolute; inset:0;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(37,211,102,0.025) 0%, transparent 40%),
+    repeating-linear-gradient(
+      45deg,
+      rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px,
+      transparent 1px, transparent 20px
+    );
+  pointer-events:none;
+}
+
+.chat-body {
+  flex:1; padding:10px 10px 8px;
+  overflow-y:auto; display:flex; flex-direction:column; gap:3px;
+  position:relative; scroll-behavior:smooth;
+}
+.chat-body::-webkit-scrollbar { width:3px; }
+.chat-body::-webkit-scrollbar-track { background:transparent; }
+.chat-body::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:2px; }
+
+.chat-date-divider {
+  text-align:center; margin:8px 0;
+  font-size:0.62rem; color:var(--sub);
+}
+.chat-date-divider span {
+  background:rgba(11,20,26,0.85);
+  padding:3px 10px; border-radius:8px;
+}
+
+.bubble {
+  max-width:82%; padding:7px 10px 5px;
+  border-radius:8px; font-size:0.8rem;
+  line-height:1.45; position:relative;
+  word-break:break-word; cursor:default;
+  animation: bubblePop 0.2s ease;
+}
+@keyframes bubblePop { from{transform:scale(0.95);opacity:0} to{transform:scale(1);opacity:1} }
+.bubble.in {
+  background:var(--bubble-in); align-self:flex-start;
+  border-top-left-radius:2px;
+}
+.bubble.out {
+  background:var(--bubble-out); align-self:flex-end;
+  border-top-right-radius:2px;
+}
+/* User's free-typed messages */
+.bubble.out.user-typed {
+  background: #1a3a4a;
+  border: 1px solid rgba(100,180,255,0.2);
+  opacity: 0.85;
+}
+
+.bubble-sender { font-size:0.65rem; font-weight:700; color:var(--accent); margin-bottom:3px; }
+.bubble-time {
+  font-size:0.58rem; color:rgba(255,255,255,0.35);
+  float:right; margin-left:8px; margin-top:2px;
+}
+.bubble-check { color:var(--accent); margin-left:2px; }
+.bubble.in.group-sender-0 .bubble-sender { color:#e2734a; }
+.bubble.in.group-sender-1 .bubble-sender { color:#a786d4; }
+.bubble.in.group-sender-2 .bubble-sender { color:#d4a017; }
+.bubble.in.group-sender-3 .bubble-sender { color:#5bb5d4; }
+.bubble.in.camila-sender .bubble-sender { color:#a786d4; }
+
+/* Camila avatar censored */
+.bubble.camila-censored-img {
+  background: var(--bubble-in);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.camila-photo-card {
+  width:100%;
+  min-height:138px;
+  border-radius:14px;
+  overflow:hidden;
+  margin-bottom:6px;
+  background:
+    linear-gradient(180deg, rgba(13,24,44,0.2) 0%, rgba(0,0,0,0.25) 100%),
+    radial-gradient(circle at 50% 25%, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.04) 18%, transparent 30%),
+    linear-gradient(180deg, #6f8cad 0%, #40536d 42%, #1d2530 100%);
+  position:relative;
+  border:1px solid rgba(255,255,255,0.08);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+}
+.camila-photo-card::after {
+  content:'';
+  position:absolute;
+  inset:auto 0 0 0;
+  height:40%;
+  background:linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.45) 100%);
+}
+.camila-photo-figure {
+  position:absolute;
+  left:50%;
+  bottom:12px;
+  width:82px;
+  height:112px;
+  transform:translateX(-50%);
+  filter:blur(1.8px);
+}
+.camila-photo-head {
+  position:absolute;
+  top:10px;
+  left:24px;
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  background:#d7b39c;
+  box-shadow:0 0 0 10px #3a251b;
+}
+.camila-photo-body {
+  position:absolute;
+  left:16px;
+  top:44px;
+  width:50px;
+  height:58px;
+  border-radius:18px 18px 12px 12px;
+  background:linear-gradient(180deg, #9b5be0 0%, #51346f 100%);
+}
+.camila-photo-limb {
+  position:absolute;
+  background:#d7b39c;
+  border-radius:999px;
+}
+.camila-photo-arm-left {
+  left:8px;
+  top:54px;
+  width:14px;
+  height:44px;
+  transform:rotate(18deg);
+}
+.camila-photo-arm-right {
+  right:8px;
+  top:56px;
+  width:14px;
+  height:44px;
+  transform:rotate(-30deg);
+}
+.camila-photo-leg-left {
+  left:24px;
+  bottom:0;
+  width:14px;
+  height:42px;
+  transform:rotate(14deg);
+}
+.camila-photo-leg-right {
+  right:24px;
+  bottom:0;
+  width:14px;
+  height:42px;
+  transform:rotate(-10deg);
+}
+.camila-photo-caption {
+  position:absolute;
+  left:10px;
+  right:10px;
+  bottom:8px;
+  z-index:1;
+  font-size:0.58rem;
+  color:rgba(255,255,255,0.72);
+  line-height:1.45;
+  text-shadow:0 2px 8px rgba(0,0,0,0.9);
+}
+
+.bubble.system {
+  background:rgba(11,20,26,0.7); align-self:center;
+  border-radius:8px; font-size:0.65rem; color:var(--sub);
+  text-align:center; padding:4px 10px; max-width:90%;
+}
+
+/* Camila left group notice */
+.bubble.system.danger-sys {
+  background: rgba(233,69,96,0.1);
+  color: rgba(233,69,96,0.8);
+  border: 1px solid rgba(233,69,96,0.2);
+}
+
+.typing-bubble {
+  background:var(--bubble-in); align-self:flex-start;
+  border-radius:8px 8px 8px 2px;
+  padding:9px 14px; display:none; align-items:center; gap:4px;
+}
+.typing-bubble span {
+  width:6px; height:6px; background:rgba(255,255,255,0.4);
+  border-radius:50%; animation:typingDot 1.2s infinite;
+}
+.typing-bubble span:nth-child(2) { animation-delay:0.2s; }
+.typing-bubble span:nth-child(3) { animation-delay:0.4s; }
+@keyframes typingDot { 0%,80%,100%{transform:scale(0.8);opacity:0.4} 40%{transform:scale(1.1);opacity:1} }
+
+/* ─── OPTIONS FOOTER ─── */
+#options-area {
+  padding:8px; background:#111b21; display:none;
+  flex-direction:column; gap:6px; flex-shrink:0;
+  max-height:200px; overflow-y:auto;
+}
+#options-area p.options-label {
+  font-size:0.62rem; color:var(--sub); padding:0 4px 2px;
+  letter-spacing:0.05em; text-transform:uppercase;
+}
+.opt-btn {
+  background:#2a3942; border:none; color:#fff;
+  padding:10px 12px; border-radius:8px; cursor:pointer;
+  text-align:left; font-size:0.78rem; font-family:'Barlow';
+  transition:background 0.15s, transform 0.1s;
+  border:1px solid rgba(255,255,255,0.05);
+  flex-shrink: 0;
+}
+.opt-btn:active { transform:scale(0.98); background:#344a55; }
+.opt-btn.good:hover { background:rgba(37,211,102,0.2); border-color:var(--accent); }
+.opt-btn.bad:hover { background:rgba(233,69,96,0.2); border-color:var(--danger); }
+.opt-btn.neutral:hover { background:#3a4a55; }
+
+/* ─── CHAT INPUT BAR (now interactive) ─── */
+.chat-input-bar {
+  background:#1f2c34; padding:8px 10px;
+  display:flex; align-items:center; gap:8px; flex-shrink:0;
+}
+.chat-input-real {
+  flex:1; background:#2a3942; border-radius:20px;
+  padding:8px 14px; font-size:0.78rem; color:#fff;
+  border: none; outline: none; font-family: 'Barlow';
+  caret-color: var(--accent);
+}
+.chat-input-real::placeholder { color: var(--sub); }
+.chat-send-btn {
+  background: var(--accent); border: none; border-radius: 50%;
+  width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 1rem; flex-shrink: 0;
+  transition: transform 0.1s;
+}
+.chat-send-btn:active { transform: scale(0.9); }
+
+/* ─── CAMERA SCREEN ─── */
+#screen-camera {
+  flex:1; display:none; flex-direction:column;
+  background:#000; position:relative;
+}
+.camera-viewfinder {
+  flex:1; position:relative; overflow:hidden;
+  display:flex; align-items:center; justify-content:center;
+}
+.camera-person {
+  width: 100%; height: 100%;
+  position: absolute; inset: 0;
+  display: grid;
+  grid-template-columns: repeat(54, 1fr);
+  grid-template-rows: repeat(80, 1fr);
+  gap: 0;
+}
+.cam-pixel { width:100%; height:100%; }
+.camera-overlay-text {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-end;
+  padding-bottom: 20px;
+  background: linear-gradient(transparent 50%, rgba(0,0,0,0.8) 100%);
+}
+.cam-existential {
+  font-size: 0.75rem; color: rgba(255,255,255,0.7);
+  text-align: center; padding: 0 20px; line-height: 1.6;
+  font-style: italic;
+}
+.camera-controls {
+  background: #111; padding: 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.cam-btn-back { font-size: 1.5rem; cursor: pointer; padding: 8px; }
+.cam-btn-shutter {
+  width: 60px; height: 60px; border-radius: 50%;
+  background: rgba(255,255,255,0.9); border: 3px solid rgba(255,255,255,0.5);
+  cursor: pointer; transition: transform 0.1s;
+}
+.cam-btn-shutter:active { transform: scale(0.9); }
+.cam-btn-flip { font-size: 1.5rem; cursor: pointer; padding: 8px; opacity: 0.5; }
+
+/* ─── OVERLAY PANELS ─── */
+.overlay {
+  position:fixed; inset:0;
+  background:rgba(0,0,0,0.97);
+  display:flex; align-items:center; justify-content:center;
+  z-index:200; opacity:0; pointer-events:none;
+  transition:opacity 0.5s ease;
+}
+.overlay.active { opacity:1; pointer-events:all; }
+
+.panel-box {
+  max-width:480px; width:90%; text-align:center; padding:2.5rem 2rem;
+}
+
+.breathe-ring {
+  width:100px; height:100px; border-radius:50%;
+  border:2px solid var(--danger); margin:0 auto 1.5rem;
+  animation:breathe 4s infinite ease-in-out;
+  box-shadow:0 0 30px rgba(233,69,96,0.3);
+}
+.breathe-ring.good {
+  border-color:var(--accent);
+  box-shadow:0 0 30px rgba(37,211,102,0.3);
+}
+@keyframes breathe { 0%,100%{transform:scale(1);opacity:0.8} 50%{transform:scale(1.25);opacity:1} }
+
+.panel-title { font-family:'Bebas Neue'; font-size:2rem; letter-spacing:3px; margin-bottom:1rem; }
+.panel-text { font-size:0.9rem; line-height:1.7; color:rgba(255,255,255,0.75); margin-bottom:2rem; }
+.panel-btn {
+  padding:0.7rem 2.5rem; border:none; border-radius:50px;
+  cursor:pointer; font-weight:700; font-size:0.85rem;
+  letter-spacing:0.05em; transition:transform 0.15s, opacity 0.15s;
+}
+.panel-btn:active { transform:scale(0.96); }
+.panel-btn.primary { background:var(--accent); color:#000; }
+.panel-btn.secondary { background:var(--danger); color:#fff; }
+
+/* Motivational messages list in mindfulness */
+.mind-tips {
+  text-align: left; margin-bottom: 1.5rem;
+  list-style: none; padding: 0;
+}
+.mind-tips li {
+  font-size: 0.8rem; color: rgba(255,255,255,0.65);
+  padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
+  line-height: 1.5;
+  opacity: 0; transform: translateX(-10px);
+  animation: tipSlideIn 0.4s ease forwards;
+}
+.mind-tips li::before { content: '→ '; color: var(--accent); }
+@keyframes tipSlideIn { to{opacity:1;transform:translateX(0)} }
+
+/* Bad mindfulness alert style */
+.overlay.alert-mode { background: rgba(30,0,0,0.98); }
+.overlay.alert-mode .breathe-ring { border-color: var(--danger); animation: alertShake 0.4s ease infinite; }
+@keyframes alertShake { 0%,100%{transform:rotate(-2deg) scale(1)} 50%{transform:rotate(2deg) scale(1.1)} }
+
+/* ─── START SCREEN ─── */
+#screen-start {
+  position:fixed; inset:0; z-index:500;
+  background:#000;
+  display:flex; align-items:center; justify-content:center;
+}
+#screen-start .panel-box { max-width:340px; }
+#screen-start h1 {
+  font-family:'Bebas Neue'; font-size:3.2rem; letter-spacing:5px;
+  line-height:0.95; margin-bottom:0.5rem;
+  background:linear-gradient(135deg,#fff 0%,rgba(255,255,255,0.5) 100%);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+}
+#screen-start p { font-size:0.8rem; color:var(--sub); margin-bottom:2.5rem; letter-spacing:0.1em; }
+.start-btn {
+  width:100%; padding:0.9rem; background:var(--accent);
+  border:none; border-radius:12px; color:#000;
+  font-weight:800; font-size:0.9rem; cursor:pointer;
+  letter-spacing:0.05em; font-family:'Barlow';
+  transition:opacity 0.2s;
+}
+.start-btn:hover { opacity:0.9; }
+
+/* ─── PHONE RELAX SCREEN (heartbeat) ─── */
+#screen-relax {
+  position: fixed; inset: 0; z-index: 300;
+  background: #000; display: none;
+  align-items: center; justify-content: center;
+  flex-direction: column; gap: 20px;
+}
+#screen-relax.active { display: flex; }
+.heartbeat-icon { font-size: 4rem; animation: heartPulse 0.6s ease infinite; }
+@keyframes heartPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.3)} }
+.relax-text { font-family:'Bebas Neue'; font-size:1.8rem; letter-spacing:4px; color: var(--danger); }
+.relax-sub { font-size:0.8rem; color:var(--sub); text-align:center; padding:0 30px; line-height:1.6; }
+.relax-btn {
+  margin-top: 20px; padding: 12px 32px;
+  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 50px; color: #fff; cursor: pointer;
+  font-size: 0.85rem; font-family: 'Barlow'; font-weight: 600;
+  transition: background 0.2s;
+}
+.relax-btn:hover { background: rgba(255,255,255,0.15); }
+#relax-progress {
+  width: 200px; height: 3px; background: rgba(255,255,255,0.1);
+  border-radius: 2px; overflow: hidden;
+}
+#relax-progress-bar {
+  height: 100%; width: 0%; background: var(--danger);
+  transition: width 0.5s linear;
+}
+
+/* ─── NARRATOR EXTERNAL ─── */
+#narrator {
+  position: fixed; left: 0; right: 0;
+  z-index: 5;
+  pointer-events: none;
+  text-align: center;
+  padding: 0 12px;
+  transition: opacity 1s ease;
+  opacity: 0;
+  max-width: 100vw;
+}
+#narrator.top { top: 10px; }
+#narrator.bottom { bottom: 80px; }
+#narrator.active { opacity: 1; }
+.narrator-text {
+  font-family: 'Crimson Text', Georgia, serif;
+  font-size: 1.25rem;
+  font-style: italic;
+  color: rgba(255,255,255,0.92);
+  line-height: 1.55;
+  letter-spacing: 0.01em;
+  text-shadow: 0 0 30px rgba(0,0,0,1), 0 0 10px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.8);
+  background: rgba(0,0,0,0.45);
+  border-radius: 10px;
+  padding: 10px 16px;
+  display: inline-block;
+  border-left: 3px solid rgba(255,255,255,0.25);
+}
+
+/* ─── PHONE NAV BAR (Android style) ─── */
+#phone-nav-bar {
+  background: rgba(0,0,0,0.85);
+  padding: 8px 0 6px;
+  display: flex; align-items: center; justify-content: space-around;
+  flex-shrink: 0;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+.nav-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  cursor: pointer; padding: 4px 12px;
+  opacity: 0.7; transition: opacity 0.15s, transform 0.1s;
+  color: #fff;
+}
+.nav-btn:active { opacity: 1; transform: scale(0.9); }
+.nav-btn-icon { font-size: 1rem; }
+.nav-btn-label { font-size: 0.42rem; letter-spacing: 0.05em; text-transform: uppercase; color: rgba(255,255,255,0.5); }
+
+/* ─── SCROLL INDICATOR ─── */
+#scroll-indicator {
+  position: absolute; right: 5px; top: 50%;
+  transform: translateY(-50%);
+  width: 4px; height: 80px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 2px;
+  z-index: 10;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+#scroll-thumb {
+  width: 100%;
+  background: rgba(37,211,102,0.5);
+  border-radius: 2px;
+  position: absolute; top: 0;
+  transition: height 0.1s, top 0.1s;
+}
+.chat-body-wrapper {
+  position: relative; flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0;
+}
+
+/* ─── MUSIC APP ─── */
+#screen-music {
+  flex:1; display:none; flex-direction:column;
+  background: linear-gradient(180deg, #0d0820 0%, #050510 100%);
+  overflow: hidden;
+}
+.music-header {
+  background: rgba(255,255,255,0.04);
+  padding: 38px 16px 12px;
+  display: flex; align-items: center; gap: 10px;
+  flex-shrink: 0;
+}
+.music-header-title { flex:1; font-size: 1rem; font-weight: 700; color: #fff; }
+.music-back { font-size: 1.2rem; cursor: pointer; color: rgba(255,255,255,0.7); }
+.music-body { flex:1; overflow-y: auto; padding: 12px 10px; }
+.music-now-playing {
+  background: rgba(255,255,255,0.05);
+  border-radius: 14px; padding: 16px 14px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(255,255,255,0.08);
+  text-align: center;
+}
+.music-vinyl {
+  width: 80px; height: 80px; border-radius: 50%;
+  background: conic-gradient(#1a0a2e, #2a1a4e, #1a0a2e, #0a0a1e, #2a1a4e);
+  margin: 0 auto 10px;
+  border: 3px solid rgba(255,255,255,0.15);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.8rem;
+  transition: transform 2s linear;
+}
+.music-vinyl.spinning { animation: vinylSpin 3s linear infinite; }
+@keyframes vinylSpin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+.music-track-name { font-size: 0.9rem; font-weight: 700; color: #fff; margin-bottom: 3px; }
+.music-track-artist { font-size: 0.72rem; color: var(--sub); margin-bottom: 12px; }
+.music-progress-bar {
+  width: 100%; height: 3px;
+  background: rgba(255,255,255,0.12);
+  border-radius: 2px; margin-bottom: 10px; cursor: pointer;
+}
+.music-progress-fill {
+  height: 100%; background: var(--accent);
+  border-radius: 2px; width: 0%;
+  transition: width 0.5s linear;
+}
+.music-controls {
+  display: flex; align-items: center; justify-content: center; gap: 20px;
+}
+.music-ctrl-btn {
+  background: none; border: none; color: #fff;
+  font-size: 1.2rem; cursor: pointer; padding: 8px;
+  opacity: 0.7; transition: opacity 0.15s, transform 0.1s;
+}
+.music-ctrl-btn.play-pause {
+  font-size: 1.6rem; opacity: 1;
+  background: var(--accent); color: #000;
+  border-radius: 50%; width: 46px; height: 46px;
+  display: flex; align-items: center; justify-content: center;
+}
+.music-ctrl-btn:active { transform: scale(0.9); }
+.music-playlist-title { font-size: 0.7rem; color: var(--sub); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px; padding: 0 2px; }
+.music-track-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; border-radius: 10px; cursor: pointer;
+  transition: background 0.15s;
+  border: 1px solid transparent;
+}
+.music-track-item:hover { background: rgba(255,255,255,0.05); }
+.music-track-item.active {
+  background: rgba(37,211,102,0.1);
+  border-color: rgba(37,211,102,0.2);
+}
+.music-track-num { font-size: 0.75rem; color: var(--sub); width: 18px; text-align: center; flex-shrink:0; }
+.music-track-item.active .music-track-num { color: var(--accent); }
+.music-track-info { flex:1; min-width:0; }
+.music-track-item-name { font-size: 0.82rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.music-track-item-dur { font-size: 0.65rem; color: var(--sub); flex-shrink:0; }
+
+/* ─── WEB APP ─── */
+#screen-web {
+  flex:1; display:none; flex-direction:column;
+  background: linear-gradient(180deg, #eef4ff 0%, #dce5f7 100%);
+  overflow: hidden;
+}
+.web-header {
+  background: rgba(255,255,255,0.92); padding: 38px 10px 10px;
+  border-bottom: 1px solid rgba(43,79,124,0.12); flex-shrink: 0;
+  backdrop-filter: blur(10px);
+}
+.web-url-bar {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(237,242,251,0.95); border-radius: 20px; padding: 7px 12px;
+  border: 1px solid rgba(43,79,124,0.14);
+}
+.web-url-input {
+  flex:1; background: none; border: none; outline: none;
+  font-size: 0.78rem; color: #333; font-family: 'Barlow', sans-serif;
+}
+.web-go-btn {
+  background: #4285f4; color: #fff; border: none;
+  border-radius: 50%; width: 26px; height: 26px;
+  font-size: 0.7rem; cursor: pointer; flex-shrink: 0;
+}
+.web-back-btn { font-size: 1.2rem; cursor: pointer; color: #555; padding: 0 4px; }
+.web-body {
+  flex:1; overflow-y: auto; background: transparent;
+  display: flex; flex-direction: column;
+}
+.web-loading {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; flex:1;
+  gap: 12px; color: #555;
+}
+.web-loading-bar {
+  width: 200px; height: 3px; background: #e0e0e0; border-radius: 2px; overflow: hidden;
+}
+.web-loading-fill {
+  height: 100%; background: #4285f4; border-radius: 2px;
+  animation: webLoad 2s ease-in-out forwards;
+}
+@keyframes webLoad { 0%{width:0%} 60%{width:70%} 80%{width:75%} 100%{width:40%} }
+.web-error-msg {
+  display: none; flex-direction: column; align-items: center;
+  justify-content: center; flex:1; padding: 20px; text-align: center;
+}
+.web-error-icon { font-size: 2.5rem; margin-bottom: 12px; }
+.web-error-title { font-size: 0.9rem; font-weight: 700; color: #333; margin-bottom: 8px; }
+.web-error-quote {
+  font-size: 0.8rem; color: #666; line-height: 1.6;
+  font-style: italic; max-width: 260px;
+  padding: 12px 16px;
+  background: #f8f8f8; border-radius: 10px;
+  border-left: 3px solid #4285f4;
+  margin-top: 8px;
+}
+.web-hero {
+  margin:16px;
+  padding:18px 16px;
+  border-radius:18px;
+  background:linear-gradient(135deg, rgba(66,133,244,0.14) 0%, rgba(37,211,102,0.08) 100%);
+  border:1px solid rgba(43,79,124,0.12);
+  color:#1d2c42;
+}
+.web-hero-title {
+  font-size:1rem;
+  font-weight:700;
+  margin-bottom:6px;
+}
+.web-hero-sub {
+  font-size:0.76rem;
+  line-height:1.6;
+  color:rgba(29,44,66,0.76);
+}
+.web-suggestions {
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  padding:0 16px 16px;
+}
+.web-chip {
+  background:rgba(255,255,255,0.8);
+  border-radius:999px;
+  padding:8px 12px;
+  font-size:0.72rem;
+  cursor:pointer;
+  color:#21426a;
+  border:1px solid rgba(43,79,124,0.14);
+}
+.web-section-label {
+  font-size:0.68rem;
+  color:rgba(29,44,66,0.56);
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  padding:0 16px 10px;
+}
+.web-results {
+  display:none;
+  flex-direction:column;
+  gap:10px;
+  padding:16px;
+}
+.web-result-card {
+  background:rgba(255,255,255,0.88);
+  border:1px solid rgba(43,79,124,0.1);
+  border-radius:16px;
+  padding:14px;
+  box-shadow:0 10px 24px rgba(17,32,57,0.08);
+}
+.web-result-url {
+  font-size:0.62rem;
+  color:#2f7e56;
+  margin-bottom:4px;
+}
+.web-result-title {
+  font-size:0.86rem;
+  font-weight:700;
+  color:#1e3b66;
+  margin-bottom:6px;
+}
+.web-result-snippet {
+  font-size:0.74rem;
+  color:#4b5c74;
+  line-height:1.55;
+}
+
+
+/* ─── FINAL SCREEN ─── */
+#screen-final .panel-box {
+  background:rgba(10,10,10,0.98);
+  border-radius:20px; border:1px solid rgba(255,255,255,0.06);
+}
+
+/* karma indicator */
+#karma-bar {
+  position:fixed; bottom:0; left:0; right:0;
+  height:2px; z-index:1;
+  opacity:0; transition:opacity 2s, background 3s;
+}
+
+/* ─── INCOMING NOTIFICATION POPUP (over phone) ─── */
+#incoming-notif {
+  position: absolute; top: 60px; left: 10px; right: 10px;
+  background: rgba(30,30,30,0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 14px;
+  padding: 10px 12px;
+  z-index: 50;
+  display: none;
+  animation: slideDown 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+/* White-out transition for good path */
+#white-flash {
+  position: fixed; inset: 0; z-index: 3;
+  background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.16) 32%, rgba(255,255,255,0.02) 62%, transparent 78%);
+  opacity: 0; pointer-events: none;
+  transition: opacity 2s ease;
+  mix-blend-mode: screen;
+}
+#white-flash.active { opacity: 1; }
+
+::-webkit-scrollbar { width:0; }
+</style>
+</head>
+<body>
+
+<div id="karma-bar"></div>
+<div id="white-flash"></div>
+
+<!-- NARRATOR (outside phone) -->
+<div id="narrator" class="top">
+  <div class="narrator-text" id="narrator-text"></div>
+</div>
+
+<!-- VOLUME INDICATOR -->
+<div id="vol-indicator">🔊 <span id="vol-text">70%</span></div>
+
+<!-- ─── START SCREEN ─── -->
+<div id="screen-start">
+  <div class="panel-box" style="text-align:center;">
+    <div style="font-size:0.65rem;letter-spacing:0.2em;color:var(--sub);margin-bottom:1.5rem;text-transform:uppercase;">Sopó, Cundinamarca · Experiencia Educativa</div>
+    <h1>El Eco<br>del<br>Silencio</h1>
+    <p>Una simulación sobre ciberbullying<br>para jóvenes de bachillerato</p>
+    <button class="start-btn" onclick="startGame()">ENCENDER CELULAR</button>
+    <div style="margin-top:1.5rem;font-size:0.65rem;color:rgba(255,255,255,0.2);line-height:1.6;">
+      Esta experiencia contiene situaciones de acoso escolar.<br>
+      Está diseñada con fines pedagógicos.
+    </div>
+  </div>
+</div>
+
+<!-- ─── WORLD ─── -->
+<div id="world">
+  <div id="atmosphere-glow"></div>
+
+  <!-- PHONE WRAPPER (with hardware buttons) -->
+  <div id="phone-wrapper">
+    <!-- Hardware buttons -->
+    <div id="btn-power" class="phone-btn" title="Botón encendido" onclick="togglePower()"></div>
+    <div id="btn-vol-up" class="phone-btn" title="Subir volumen" onclick="changeVolume(1)"></div>
+    <div id="btn-vol-down" class="phone-btn" title="Bajar volumen" onclick="changeVolume(-1)"></div>
+
+    <div id="phone">
+      <!-- Phone off overlay -->
+      <div id="phone-off-overlay">
+        <div class="power-icon">⏻</div>
+        <div class="power-hint">MANTÉN PRESIONADO PARA ENCENDER</div>
+      </div>
+
+      <div id="phone-screen">
+        <!-- Status bar -->
+        <div class="status-bar">
+          <span id="status-time">12:00</span>
+          <div class="status-right">
+            <span id="vol-icon">🔊</span>
+            <span>▲▲▲</span>
+            <span>🔋</span>
+          </div>
+        </div>
+
+        <!-- HOME -->
+        <div id="screen-home" style="display:flex;">
+          <div class="home-time" id="home-clock">12:00</div>
+          <div class="home-date">Miércoles, 22 de Abril</div>
+          <div id="lock-notification" onclick="openChatList()">
+            <div class="notif-row">
+              <div class="notif-icon">💬</div>
+              <div class="notif-body">
+                <div class="notif-app">WhatsApp · El Parche 10B <span class="notif-time" style="float:right">ahora</span></div>
+                <div class="notif-preview" id="lock-notif-preview">Santi: Parce, miren lo que encontré 😂😂</div>
+              </div>
+            </div>
+          </div>
+          <div class="home-apps">
+            <div class="app-icon" onclick="openChatList()" title="WhatsApp">
+              <span>💬</span>
+              <div class="app-badge" id="home-badge">4</div>
+            </div>
+            <div class="app-icon" onclick="openCamera()">📷</div>
+            <div class="app-icon" onclick="openMusic()">🎵</div>
+            <div class="app-icon" onclick="openWeb()">🌐</div>
+          </div>
+        </div>
+
+        <!-- CHAT LIST -->
+        <div id="screen-chatlist" style="display:none;flex-direction:column;">
+          <div class="wa-header" style="position:relative;">
+            <h2>WhatsApp</h2>
+            <div class="wa-header-icons">
+              <span>🔍</span><span onclick="toggleWhatsAppMenu(event)">⋮</span>
+            </div>
+            <div id="wa-menu">
+              <div onclick="openFillerChat('mama'); closeWhatsAppMenu();">Mamá</div>
+              <div onclick="openFillerChat('papa'); closeWhatsAppMenu();">Papá</div>
+              <div onclick="openFillerChat('machete'); closeWhatsAppMenu();">Machete</div>
+            </div>
+          </div>
+          <div class="chat-list" id="chat-list-items"></div>
+        </div>
+
+        <!-- CHAT -->
+        <div id="screen-chat" style="display:none;flex-direction:column;">
+          <div class="chat-header-bar" style="position:relative;">
+            <div class="chat-back" onclick="goBack()">‹</div>
+            <div id="chat-avatar-header" class="chat-avatar" style="width:36px;height:36px;font-size:1rem;"></div>
+            <div class="chat-header-info">
+              <div class="chat-header-name" id="chat-title-bar">—</div>
+              <div class="chat-header-sub" id="chat-sub-bar">—</div>
+            </div>
+            <div class="chat-header-more" onclick="toggleCtxMenu()">⋮
+              <div id="context-menu">
+                <div onclick="tryLeaveGroup()">Salir del grupo</div>
+                <div onclick="openCamera(); closeCtxMenu()">Ver foto de perfil</div>
+                <div onclick="closeCtxMenu()">Silenciar</div>
+              </div>
+            </div>
+          </div>
+          <!-- In-chat notification banner -->
+          <div id="incoming-notif" onclick="dismissIncomingNotif()">
+            <div class="notif-row">
+              <div class="notif-icon" id="in-notif-icon">💬</div>
+              <div class="notif-body">
+                <div class="notif-app" id="in-notif-app">WhatsApp</div>
+                <div class="notif-preview" id="in-notif-preview">...</div>
+              </div>
+            </div>
+          </div>
+          <div class="chat-body-wrapper">
+            <div class="chat-wallpaper"></div>
+            <div class="chat-body" id="chat-body" onscroll="updateScrollIndicator()">
+              <div class="typing-bubble" id="typing-indicator">
+                <span></span><span></span><span></span>
+              </div>
+            </div>
+            <div id="scroll-indicator"><div id="scroll-thumb" style="height:30%;top:0%"></div></div>
+          </div>
+          <div id="options-area"></div>
+          <div class="chat-input-bar">
+            <input type="text" class="chat-input-real" id="chat-input" placeholder="Escribe un mensaje..." maxlength="200" onkeydown="handleInputKey(event)">
+            <button class="chat-send-btn" onclick="sendUserMessage()">➤</button>
+          </div>
+        </div>
+
+        <!-- CAMERA -->
+        <div id="screen-camera" style="display:none;flex-direction:column;">
+          <div class="camera-viewfinder">
+            <div class="camera-person" id="camera-person"></div>
+            <div class="camera-overlay-text">
+              <div class="cam-existential" id="cam-existential-text">¿Eres tú quien mira,<br>o eres parte del sistema que observa?</div>
+            </div>
+          </div>
+          <div class="camera-controls">
+            <div class="cam-btn-back" onclick="closeCamera()">‹</div>
+            <div class="cam-btn-shutter" onclick="cameraShutter()"></div>
+            <div class="cam-btn-flip">↺</div>
+          </div>
+        </div>
+
+        <!-- MUSIC APP -->
+        <div id="screen-music" style="display:none;flex-direction:column;">
+          <div class="music-header">
+            <div class="music-back" onclick="closeApp('music')">‹</div>
+            <div class="music-header-title">🎵 Música</div>
+          </div>
+          <div class="music-body">
+            <div class="music-now-playing">
+              <div class="music-vinyl" id="music-vinyl">🎵</div>
+              <div class="music-track-name" id="music-track-name">Lago de los Cisnes</div>
+              <div class="music-track-artist" id="music-track-artist">8-bit Clásicos</div>
+              <div class="music-progress-bar"><div class="music-progress-fill" id="music-progress-fill"></div></div>
+              <div class="music-controls">
+                <button class="music-ctrl-btn" onclick="prevTrack()">⏮</button>
+                <button class="music-ctrl-btn play-pause" id="music-play-btn" onclick="toggleMusicPlay()">▶</button>
+                <button class="music-ctrl-btn" onclick="nextTrack()">⏭</button>
+              </div>
+            </div>
+            <div class="music-playlist-title">Lista de reproducción</div>
+            <div id="music-playlist"></div>
+          </div>
+        </div>
+
+        <!-- WEB APP -->
+        <div id="screen-web" style="display:none;flex-direction:column;">
+          <div class="web-header">
+            <div class="web-url-bar">
+              <span class="web-back-btn" onclick="closeApp('web')">‹</span>
+              <input type="text" class="web-url-input" id="web-url-input" placeholder="Busca algo en internet..." onkeydown="handleWebSearch(event)">
+              <button class="web-go-btn" onclick="doWebSearch()">→</button>
+            </div>
+          </div>
+          <div class="web-body" id="web-body">
+            <div class="web-loading" id="web-loading" style="display:none;">
+              <div style="font-size:0.8rem;color:#555;">Cargando...</div>
+              <div class="web-loading-bar"><div class="web-loading-fill" id="web-loading-fill"></div></div>
+            </div>
+            <div class="web-error-msg" id="web-error-msg" style="display:none;">
+              <div class="web-error-icon">🌐</div>
+              <div class="web-error-title">Error de conexión</div>
+              <div class="web-error-quote" id="web-error-quote"></div>
+            </div>
+            <div id="web-home-content" style="padding:20px;text-align:center;">
+              <div class="web-hero">
+                <div class="web-hero-title">Buscador escolar</div>
+                <div class="web-hero-sub">Consulta rutas de ayuda, contexto del caso, convivencia escolar y términos que empiezan a aparecerte cuando todo se sale de control.</div>
+              </div>
+              <div class="web-section-label">Sugerencias</div>
+              <div class="web-suggestions">
+                <div onclick="searchWeb('cyberbullying')" class="web-chip">cyberbullying</div>
+                <div onclick="searchWeb('cómo reportar acoso escolar')" class="web-chip">cómo reportar acoso escolar</div>
+                <div onclick="searchWeb('ley 1620 cyberbullying colombia')" class="web-chip">ley 1620 cyberbullying</div>
+                <div onclick="searchWeb('cómo ayudar a una compañera acosada')" class="web-chip">cómo ayudar a una compañera acosada</div>
+                <div onclick="searchWeb('Camila Morales Sopó')" class="web-chip">Camila Morales Sopó</div>
+                <div onclick="searchWeb('qué hacer si compartí una foto sin permiso')" class="web-chip">qué hacer si compartí una foto sin permiso</div>
+              </div>
+            </div>
+            <div class="web-results" id="web-results"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Android Nav Bar -->
+      <div id="phone-nav-bar">
+        <div class="nav-btn" onclick="navBack()">
+          <div class="nav-btn-icon">◁</div>
+          <div class="nav-btn-label">Atrás</div>
+        </div>
+        <div class="nav-btn" onclick="navHome()">
+          <div class="nav-btn-icon">⬤</div>
+          <div class="nav-btn-label">Inicio</div>
+        </div>
+        <div class="nav-btn" onclick="navRecents()">
+          <div class="nav-btn-icon">▣</div>
+          <div class="nav-btn-label">Recientes</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── MINDFULNESS OVERLAY ─── -->
+<div id="overlay-mind" class="overlay">
+  <div class="panel-box">
+    <div class="breathe-ring" id="breathe-ring"></div>
+    <div class="panel-title" id="mind-title">Respira...</div>
+    <div class="panel-text" id="mind-text"></div>
+    <ul class="mind-tips" id="mind-tips" style="display:none;"></ul>
+    <button class="panel-btn primary" id="mind-btn" onclick="mindContinue()">CONTINUAR</button>
+  </div>
+</div>
+
+<!-- ─── LEAVE WARNING ─── -->
+<div id="leave-warning" class="overlay">
+  <div class="panel-box" style="background:rgba(10,10,10,0.98);border-radius:16px;border:1px solid rgba(233,69,96,0.3);">
+    <div style="font-size:2rem;margin-bottom:1rem;">⚠️</div>
+    <div class="panel-title" id="leave-title" style="color:var(--danger);">Espera...</div>
+    <div class="panel-text" id="leave-text"></div>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+      <button class="panel-btn secondary" onclick="confirmLeave()">Salir de todas formas</button>
+      <button class="panel-btn primary" onclick="closeLeavWarning()">Quedarme</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── PHONE RELAX SCREEN ─── -->
+<div id="screen-relax">
+  <div class="heartbeat-icon">❤️</div>
+  <div class="relax-text">RESPIRA</div>
+  <div class="relax-sub" id="relax-sub-text">Las cosas se están complicando.<br>Tómate un momento antes de continuar.</div>
+  <div id="relax-progress"><div id="relax-progress-bar"></div></div>
+  <button class="relax-btn" id="relax-continue-btn" onclick="endRelax()" style="display:none;">Continuar →</button>
+</div>
+
+<!-- ─── FINAL SCREEN ─── -->
+<div id="screen-final" class="overlay">
+  <div class="panel-box" style="background:rgba(10,10,10,0.98);border-radius:20px;border:1px solid rgba(255,255,255,0.06);max-height:90vh;overflow-y:auto;">
+    <div style="font-size:2.5rem;margin-bottom:1rem;" id="final-emoji">🏆</div>
+    <div class="panel-title" id="final-title">—</div>
+    <div class="panel-text" id="final-text"></div>
+    <div id="final-postcredit" style="margin-bottom:1.5rem;display:none;font-size:0.78rem;color:rgba(255,255,255,0.5);line-height:1.7;border-top:1px solid rgba(255,255,255,0.08);padding-top:1rem;"></div>
+    <button class="panel-btn primary" onclick="location.reload()">REINICIAR</button>
+    <div style="margin-top:1rem;">
+      <div style="font-size:0.65rem;color:var(--sub);margin-bottom:0.5rem;">Actividad post-experiencia sugerida:</div>
+      <div style="font-size:0.72rem;color:rgba(255,255,255,0.45);line-height:1.6;">Debate grupal: <em>"¿En qué momento dejó de ser divertido?"</em><br>Crear el Protocolo de Acción Digital del Parche 10B.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── GLOBAL STATE ───
+let karma = 0;
+let currentChat = null;
+let stageIndices = {};
+let leftGroup = false;
+let hasActed = false;
+let mindCallback = null;
+let ctxMenuOpen = false;
+let phoneOn = true;
+let masterVolume = 0.7; // 0-1
+let camilaLeftGroup = false;
+let relaxCallback = null;
+let relaxTimer = null;
+let narratorTimer = null;
+let prevScreen = null; // screen before camera
+let awaitingManualPowerOn = false;
+let badEndingPending = null;
+let finalReflectionShown = false;
+const endingFlags = {
+  supportCamila: 0,
+  supportBullies: 0,
+  truthAdults: 0,
+  liedAdults: 0,
+  severePunishmentRoute: false,
+  lawsuitRoute: false
+};
+const conversationState = {};
+
+// ─── AUDIO CONTEXT ───
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+function getAudioCtx() {
+  if(!audioCtx) audioCtx = new AudioCtx();
+  return audioCtx;
+}
+
+// Static noise node
+let staticNode = null;
+let staticGain = null;
+let staticActive = false;
+
+function startStatic(vol=0.04) {
+  try {
+    const ctx = getAudioCtx();
+    if(staticNode) { stopStatic(); }
+    const bufferSize = ctx.sampleRate * 2;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for(let i=0;i<bufferSize;i++) data[i] = (Math.random()*2-1)*0.3;
+    staticNode = ctx.createBufferSource();
+    staticNode.buffer = buffer;
+    staticNode.loop = true;
+    staticGain = ctx.createGain();
+    staticGain.gain.value = vol * masterVolume;
+    staticNode.connect(staticGain);
+    staticGain.connect(ctx.destination);
+    staticNode.start();
+    staticActive = true;
+  } catch(e){}
+}
+
+function stopStatic() {
+  try {
+    if(staticNode) { staticNode.stop(); staticNode.disconnect(); staticNode=null; }
+    if(staticGain) { staticGain.disconnect(); staticGain=null; }
+    staticActive = false;
+  } catch(e){}
+}
+
+function setStaticVolume(vol) {
+  if(staticGain) staticGain.gain.value = vol * masterVolume;
+}
+
+// Heartbeat sound
+let heartbeatInterval = null;
+function startHeartbeat() {
+  stopHeartbeat();
+  heartbeatInterval = setInterval(()=>{
+    playHeartTone();
+  }, 600);
+}
+function stopHeartbeat() {
+  if(heartbeatInterval) { clearInterval(heartbeatInterval); heartbeatInterval=null; }
+}
+function playHeartTone() {
+  try {
+    const ctx = getAudioCtx();
+    function beat(t) {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.type = 'sine'; osc.frequency.value = 80;
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.35*masterVolume, t+0.04);
+      g.gain.exponentialRampToValueAtTime(0.001, t+0.2);
+      osc.start(t); osc.stop(t+0.25);
+    }
+    beat(ctx.currentTime);
+    beat(ctx.currentTime+0.2);
+  } catch(e){}
+}
+
+function playTone(type) {
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    if(type==='receive') {
+      osc.frequency.setValueAtTime(800,ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(600,ctx.currentTime+0.1);
+      gain.gain.setValueAtTime(0.12*masterVolume,ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.25);
+      osc.start(); osc.stop(ctx.currentTime+0.25);
+    } else if(type==='send') {
+      osc.frequency.setValueAtTime(500,ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(700,ctx.currentTime+0.08);
+      gain.gain.setValueAtTime(0.08*masterVolume,ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.15);
+      osc.start(); osc.stop(ctx.currentTime+0.15);
+    } else if(type==='notif') {
+      const osc2 = ctx.createOscillator();
+      const g2 = ctx.createGain();
+      osc2.connect(g2); g2.connect(ctx.destination);
+      osc.frequency.value=900; gain.gain.setValueAtTime(0.1*masterVolume,ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.15);
+      osc.start(); osc.stop(ctx.currentTime+0.15);
+      osc2.frequency.value=1100; g2.gain.setValueAtTime(0.1*masterVolume,ctx.currentTime+0.18);
+      g2.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.35);
+      osc2.start(ctx.currentTime+0.18); osc2.stop(ctx.currentTime+0.35);
+    } else if(type==='breathe') {
+      osc.frequency.value = 300;
+      gain.gain.setValueAtTime(0.03*masterVolume, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.07*masterVolume, ctx.currentTime+1.5);
+      gain.gain.linearRampToValueAtTime(0.03*masterVolume, ctx.currentTime+3);
+      osc.start(); osc.stop(ctx.currentTime+3);
+    } else if(type==='alert') {
+      for(let i=0;i<3;i++) {
+        const ao = ctx.createOscillator();
+        const ag = ctx.createGain();
+        ao.connect(ag); ag.connect(ctx.destination);
+        ao.frequency.value = 440 + i*200;
+        ag.gain.setValueAtTime(0, ctx.currentTime+i*0.15);
+        ag.gain.linearRampToValueAtTime(0.3*masterVolume, ctx.currentTime+i*0.15+0.05);
+        ag.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+i*0.15+0.3);
+        ao.start(ctx.currentTime+i*0.15);
+        ao.stop(ctx.currentTime+i*0.15+0.35);
+      }
+    }
+  } catch(e){}
+}
+
+// ─── VOLUME CONTROL ───
+function changeVolume(dir) {
+  masterVolume = Math.max(0, Math.min(1, masterVolume + dir*0.1));
+  masterVolume = Math.round(masterVolume*10)/10;
+  if(staticGain) staticGain.gain.value = (staticActive ? 0.04 : 0) * masterVolume;
+  showVolIndicator();
+}
+
+function showVolIndicator() {
+  const ind = document.getElementById('vol-indicator');
+  const txt = document.getElementById('vol-text');
+  txt.textContent = Math.round(masterVolume*100)+'%';
+  const icon = document.getElementById('vol-icon');
+  icon.textContent = masterVolume === 0 ? '🔇' : masterVolume < 0.4 ? '🔈' : masterVolume < 0.7 ? '🔉' : '🔊';
+  // Status bar icon
+  document.getElementById('vol-icon').textContent = icon.textContent;
+  ind.style.display = 'block';
+  setTimeout(()=>{ ind.style.display='none'; }, 2000);
+}
+
+// ─── POWER BUTTON ───
+let powerHoldTimer = null;
+function togglePower() {
+  if(!phoneOn) {
+    if(document.getElementById('screen-relax').classList.contains('active')) return;
+    phoneOn = true;
+    awaitingManualPowerOn = false;
+    const offOverlay = document.getElementById('phone-off-overlay');
+    offOverlay.style.display='none';
+    document.querySelector('#phone-off-overlay .power-hint').textContent = 'MANTÉN PRESIONADO PARA ENCENDER';
+  } else {
+    showMindfulness({
+      good: false,
+      title: 'Apagar celular',
+      text: 'La situación se está poniendo difícil. ¿Apagas el celular para calmarte un momento?',
+      btn: 'Sí, apagar'
+    }, ()=>{
+      triggerPhoneOff();
+    });
+  }
+}
+
+function triggerPhoneOff(cb) {
+  phoneOn = false;
+  awaitingManualPowerOn = true;
+  const offOverlay = document.getElementById('phone-off-overlay');
+  offOverlay.style.display='flex';
+  document.querySelector('#phone-off-overlay .power-hint').textContent = 'ESPERA Y RESPIRA';
+  startRelax(()=>{
+    document.querySelector('#phone-off-overlay .power-hint').textContent = 'PRESIONA EL BOTÓN LATERAL PARA ENCENDER';
+    if(cb) cb();
+  });
+}
+
+// ─── RELAX SEQUENCE ───
+function startRelax(cb) {
+  relaxCallback = cb;
+  stopHeartbeat(); // stop the scary sounds
+  const rel = document.getElementById('screen-relax');
+  rel.classList.add('active');
+  const prog = document.getElementById('relax-progress-bar');
+  prog.style.width = '0%';
+  document.getElementById('relax-continue-btn').style.display='none';
+
+  let pct = 0;
+  relaxTimer = setInterval(()=>{
+    pct += 2;
+    prog.style.width = pct+'%';
+    if(pct >= 100) {
+      clearInterval(relaxTimer); relaxTimer=null;
+      document.getElementById('relax-continue-btn').style.display='block';
+    }
+  }, 100);
+}
+
+function endRelax() {
+  const rel = document.getElementById('screen-relax');
+  rel.classList.remove('active');
+  if(relaxTimer) { clearInterval(relaxTimer); relaxTimer=null; }
+  if(relaxCallback) { const cb=relaxCallback; relaxCallback=null; setTimeout(cb,400); }
+}
+
+// ─── CLOCK ───
+function updateClock() {
+  const now = new Date();
+  const h = now.getHours().toString().padStart(2,'0');
+  const m = now.getMinutes().toString().padStart(2,'0');
+  const t = h+':'+m;
+  document.getElementById('home-clock').textContent = t;
+  document.getElementById('status-time').textContent = t;
+}
+setInterval(updateClock,10000); updateClock();
+
+// ─── KARMA & ATMOSPHERE ───
+function updateAtmosphere() {
+  const t = (karma + 10) / 20;
+  const glow = document.getElementById('atmosphere-glow');
+  const bar = document.getElementById('karma-bar');
+  const phone = document.getElementById('phone');
+
+  if(t > 0.6) {
+    const intensity = Math.min((t-0.6)/0.4, 1);
+    glow.style.background = `radial-gradient(ellipse 60% 74% at 50% 50%, rgba(255,255,255,${intensity*0.06}) 0%, rgba(200,240,255,${intensity*0.05}) 34%, transparent 60%)`;
+    phone.style.filter = `brightness(${1 + intensity*0.07}) contrast(${1 - intensity*0.02})`;
+    document.getElementById('world').style.background = `rgba(${Math.floor(intensity*8)},${Math.floor(intensity*10)},${Math.floor(intensity*8)},1)`;
+    bar.style.background = `linear-gradient(90deg,rgba(37,211,102,${intensity*0.6}) 0%,transparent 100%)`;
+    bar.style.opacity = '1';
+    const wf = document.getElementById('white-flash');
+    wf.style.opacity = intensity > 0.45 ? ((intensity - 0.45) * 0.12).toFixed(3) : '0';
+  } else if(t < 0.4) {
+    const intensity = Math.min((0.4-t)/0.4, 1);
+    glow.style.background = `radial-gradient(ellipse 70% 80% at 50% 50%, rgba(233,69,96,${intensity*0.12}) 0%, transparent 70%)`;
+    phone.style.filter = `brightness(${1 + intensity*0.4}) saturate(${1+intensity*0.3})`;
+    document.getElementById('world').style.background = `rgba(${Math.floor(intensity*15)},0,0,1)`;
+    bar.style.background = `linear-gradient(90deg,rgba(233,69,96,${intensity*0.6}) 0%,transparent 100%)`;
+    bar.style.opacity = '1';
+  } else {
+    glow.style.background = 'transparent';
+    phone.style.filter = 'brightness(1)';
+    document.getElementById('world').style.background = '#000';
+    bar.style.opacity = '0';
+    document.getElementById('white-flash').style.opacity = '0';
+  }
+}
+
+// ─── NARRATOR ───
+function showNarrator(text, pos='bottom', duration=5000) {
+  const el = document.getElementById('narrator');
+  el.className = pos;
+  document.getElementById('narrator-text').textContent = text;
+  el.classList.add('active');
+  if(narratorTimer) clearTimeout(narratorTimer);
+  narratorTimer = setTimeout(()=>{ el.classList.remove('active'); }, duration);
+}
+
+// ─── PIXEL CENSOR IMAGE ───
+function createPixelCensor(container, colors, label) {
+  container.innerHTML = '';
+  const card = document.createElement('div');
+  card.className = 'camila-photo-card';
+  const figure = document.createElement('div');
+  figure.className = 'camila-photo-figure';
+  figure.innerHTML = `
+    <div class="camila-photo-head"></div>
+    <div class="camila-photo-body"></div>
+    <div class="camila-photo-limb camila-photo-arm-left"></div>
+    <div class="camila-photo-limb camila-photo-arm-right"></div>
+    <div class="camila-photo-limb camila-photo-leg-left"></div>
+    <div class="camila-photo-limb camila-photo-leg-right"></div>
+  `;
+  const caption = document.createElement('div');
+  caption.className = 'camila-photo-caption';
+  caption.textContent = label || '📷 camila_en_descanso.jpg · imagen recreada y difuminada por respeto';
+  card.appendChild(figure);
+  card.appendChild(caption);
+  container.appendChild(card);
+}
+
+// ─── CAMERA ───
+function openCamera() {
+  prevScreen = currentChat ? 'chat' : (document.getElementById('screen-chatlist').style.display!=='none' ? 'chatlist' : 'home');
+  showScreen('camera');
+  buildCameraPixels();
+  updateExistentialText();
+}
+function closeCamera() {
+  if(prevScreen === 'chat' && currentChat) {
+    showScreen('chat');
+  } else if(prevScreen === 'chatlist') {
+    openChatList();
+  } else {
+    showScreen('home');
+  }
+}
+function buildCameraPixels() {
+  const container = document.getElementById('camera-person');
+  container.innerHTML = '';
+  const COLS = 54, ROWS = 80;
+  const skinTones = ['#d8b59a','#c99878','#e3c7b2','#b98261'];
+  const hairColor = ['#24140d','#3a2217','#4a2c21'];
+  const clothTop = ['#7844a5','#6d7cc8','#435b82'];
+  const clothBottom = ['#25344f','#1c293f','#2e2534'];
+  const bgSky = ['#243750','#314b68','#445c78','#536b89'];
+  const bgFloor = ['#2b2016','#372a1d','#21180f'];
+  const bgSide = ['#1a2a24','#142118','#203127'];
+
+  for(let r=0;r<ROWS;r++) {
+    for(let c=0;c<COLS;c++) {
+      const cell = document.createElement('div');
+      cell.className = 'cam-pixel';
+      const cx = (c - COLS/2 + 0.5) / (COLS/2);
+      const cy = r / ROWS;
+      let color, alpha;
+
+      if(r < 18) {
+        color = bgSky[Math.min(bgSky.length - 1, Math.floor((r / 18) * bgSky.length))];
+        alpha = 0.9;
+      } else if(Math.abs(cx) > 0.78 && r < 54) {
+        color = bgSide[Math.floor(Math.random() * bgSide.length)];
+        alpha = 0.82 + Math.random() * 0.16;
+      } else if(r > 58) {
+        color = bgFloor[Math.floor(Math.random() * bgFloor.length)];
+        alpha = 0.95;
+      } else if(cy >= 0.16 && cy <= 0.3 && Math.abs(cx) < 0.12) {
+        color = r < 19 ? hairColor[Math.floor(Math.random() * hairColor.length)] : skinTones[Math.floor(Math.random() * skinTones.length)];
+        alpha = 1;
+      } else if(cy > 0.3 && cy <= 0.36 && Math.abs(cx) < 0.05) {
+        color = skinTones[1];
+        alpha = 1;
+      } else if(cy > 0.36 && cy <= 0.58 && Math.abs(cx) < 0.2) {
+        color = clothTop[Math.floor(Math.random() * clothTop.length)];
+        alpha = 1;
+      } else if(cy > 0.4 && cy <= 0.6 && Math.abs(cx) >= 0.2 && Math.abs(cx) < 0.29) {
+        color = skinTones[2];
+        alpha = 0.94;
+      } else if(cy > 0.58 && cy <= 0.76 && Math.abs(cx) < 0.15) {
+        color = clothBottom[Math.floor(Math.random() * clothBottom.length)];
+        alpha = 1;
+      } else if(cy > 0.76 && Math.abs(cx) < 0.12) {
+        color = clothBottom[0];
+        alpha = 0.96;
+      } else {
+        color = bgSky[Math.floor(Math.random() * bgSky.length)];
+        alpha = 0.68 + Math.random() * 0.22;
+      }
+
+      cell.style.background = color;
+      cell.style.opacity = alpha + '';
+      container.appendChild(cell);
+    }
+  }
+}
+function updateExistentialText() {
+  const msgs = [
+    '¿Eres tú quien mira,\no eres parte del sistema que observa?',
+    'La cámara te ve.\n¿Tus acciones te definen o te siguen?',
+    'Si nadie te ve, ¿importa lo que haces?\nAlguien siempre está mirando.',
+    '¿Esta eres tú, o la imagen que otros construyeron de ti?',
+    'El testigo silencioso también deja huella.'
+  ];
+  const idx = Math.floor(Math.random()*msgs.length);
+  document.getElementById('cam-existential-text').textContent = msgs[idx];
+}
+function cameraShutter() {
+  const vf = document.querySelector('.camera-viewfinder');
+  vf.style.background = '#fff';
+  setTimeout(()=>{ vf.style.background=''; buildCameraPixels(); updateExistentialText(); }, 200);
+}
+
+// ─── INCOMING NOTIFICATION (while in chat) ───
+function showIncomingNotif(chatId, preview, duration=4000) {
+  const chat = CHATS[chatId];
+  if(!chat) return;
+  if(currentChat === chatId) return; // already in that chat
+  const notif = document.getElementById('incoming-notif');
+  document.getElementById('in-notif-icon').textContent = chat.avatar;
+  document.getElementById('in-notif-app').textContent = 'WhatsApp · '+chat.name;
+  document.getElementById('in-notif-preview').textContent = preview;
+  notif.onclick = ()=>{ dismissIncomingNotif(); openChat(chatId); };
+  notif.style.display = 'block';
+  playTone('notif');
+  setTimeout(dismissIncomingNotif, duration);
+}
+function dismissIncomingNotif() {
+  document.getElementById('incoming-notif').style.display='none';
+}
+
+// ─── CHAT DATA ───
+const FILLER_CHATS = {
+  mateo: {
+    name: 'Mateo Rincón',
+    avatar: '🧑',
+    color: '#4a8a6a',
+    subtitle: 'Compañero del curso',
+    badge: 0,
+    locked: false,
+    filler: true,
+    intro: [
+      { s:'Sistema', t:'Ayer', cls:'system' },
+      { s:'Mateo Rincón', t:'Parce, ¿qué trajo de tarea la Patty para mañana?', cls:'in g3', time:'17:22', d:0 },
+      { s:'Tú', t:'creo que el punto 3 del capítulo 7 de sociales', cls:'out', time:'17:23', d:400 },
+      { s:'Mateo Rincón', t:'ay no, ese libro no lo tengo 😩', cls:'in g3', time:'17:24', d:700 },
+      { s:'Tú', t:'te lo mando por foto', cls:'out', time:'17:25', d:900 },
+      { s:'Mateo Rincón', t:'gracias parcero!! 🙌', cls:'in g3', time:'17:25', d:1100 },
+      { s:'Sistema', t:'Hoy', cls:'system' },
+      { s:'Mateo Rincón', t:'oye, viste lo del grupo de 10B?', cls:'in g3', time:'11:50', d:1400 }
+    ],
+    stages: []
+  },
+  dani: {
+    name: 'Dani García',
+    avatar: '💁',
+    color: '#8a4a8a',
+    subtitle: 'Compañera del curso',
+    badge: 2,
+    locked: false,
+    filler: true,
+    intro: [
+      { s:'Sistema', t:'Ayer', cls:'system' },
+      { s:'Dani García', t:'Parcera 👋 hoy en ed física, ¿tocó correr los 1000?', cls:'in g1', time:'08:10', d:0 },
+      { s:'Tú', t:'sí ugh, casi me muero 💀', cls:'out', time:'08:12', d:300 },
+      { s:'Dani García', t:'jajaja igual! el profe Jairo nos vio caminando y nada dijo 😂', cls:'in g1', time:'08:13', d:600 },
+      { s:'Dani García', t:'oye para la exposición de inglés, ¿ya elegiste tu personaje?', cls:'in g1', time:'08:15', d:900 },
+      { s:'Tú', t:'ni idea, me falta escoger', cls:'out', time:'08:16', d:1100 },
+      { s:'Sistema', t:'Hoy', cls:'system' },
+      { s:'Dani García', t:'¿supiste lo de Camila? 😟', cls:'in g1', time:'12:15', d:1400 },
+      { s:'Dani García', t:'qué horrible lo que le están haciendo', cls:'in g1', time:'12:16', d:1700 }
+    ],
+    stages: []
+  },
+  mama: {
+    name: 'Mamá',
+    avatar: '👩',
+    color: '#cb6f8f',
+    subtitle: 'Mamá',
+    badge: 1,
+    locked: false,
+    filler: true,
+    intro: [
+      { s:'Sistema', t:'Hoy', cls:'system' },
+      { s:'Mamá', t:'Amor, cuando salgas del colegio me avisas.', cls:'in g2', time:'10:05', d:0 },
+      { s:'Mamá', t:'Y por favor nada de quedarte callado si ves que alguien está sufriendo. Tú no eres así.', cls:'in g2', time:'10:06', d:500 }
+    ],
+    stages: []
+  },
+  papa: {
+    name: 'Papá',
+    avatar: '👨',
+    color: '#547fb8',
+    subtitle: 'Papá',
+    badge: 0,
+    locked: false,
+    filler: true,
+    intro: [
+      { s:'Sistema', t:'Hoy', cls:'system' },
+      { s:'Papá', t:'Chaval, hoy salgo tarde del trabajo. Si necesitas hablar, me escribes.', cls:'in g0', time:'11:02', d:0 },
+      { s:'Papá', t:'Recuerda que hacerse el loco también es una decisión.', cls:'in g0', time:'11:03', d:500 }
+    ],
+    stages: []
+  },
+  hermano: {
+    name: 'Hermano',
+    avatar: '🧢',
+    color: '#5e92aa',
+    subtitle: 'Hermano mayor',
+    badge: 0,
+    locked: false,
+    filler: true,
+    intro: [
+      { s:'Sistema', t:'Hoy', cls:'system' },
+      { s:'Hermano', t:'Bro, si el grupo del salón se puso tóxico, siléncialo un rato pero no te desaparezcas.', cls:'in g3', time:'11:18', d:0 },
+      { s:'Hermano', t:'Si alguien está jodido de verdad, dile a un adulto ya.', cls:'in g3', time:'11:19', d:400 }
+    ],
+    stages: []
+  },
+  bro: {
+    name: 'Bro',
+    avatar: '😎',
+    color: '#48a26e',
+    subtitle: 'Mejor amigo',
+    badge: 1,
+    locked: false,
+    filler: true,
+    intro: [
+      { s:'Sistema', t:'Hoy', cls:'system' },
+      { s:'Bro', t:'Parce, la vuelta con Camila está fea. Si vas a hacer algo, hazlo ya.', cls:'in g0', time:'12:18', d:0 },
+      { s:'Bro', t:'Yo te cubro si toca hablar con la coordinadora.', cls:'in g0', time:'12:19', d:400 }
+    ],
+    stages: []
+  },
+  machete: {
+    name: 'Machete',
+    avatar: '🗡️',
+    color: '#8e6b2b',
+    subtitle: 'Easter egg del menú',
+    badge: 0,
+    locked: false,
+    filler: true,
+    intro: [
+      { s:'Sistema', t:'Ahora', cls:'system' },
+      { s:'Machete', t:'Mamá, papá... machete. Ya completaste el meme.', cls:'in g1', time:'12:20', d:0 },
+      { s:'Machete', t:'Pero pilas: en esta historia las palabras cortan más que yo.', cls:'in g1', time:'12:21', d:500 }
+    ],
+    stages: []
+  }
+};
+
+const CHATS = {
+  grupo: {
+    name: 'El Parche 10B',
+    avatar: '🎒',
+    color: '#e2734a',
+    subtitle: 'Santi, Mafe, Valeria, Tú...',
+    badge: 3,
+    locked: false,
+    intro: [
+      { s:'Sistema', t:'Ayer', cls:'system' },
+      { s:'Santi', t:'Buenas parceros 👋 ¿alguien hizo la tarea de matemáticas?', cls:'in g0', time:'16:30', d:0 },
+      { s:'Mafe', t:'yo solo hice los primeros 5 😅', cls:'in g1', time:'16:31', d:300 },
+      { s:'Valeria', t:'yo tampoco terminé, era demasiado larga', cls:'in g2', time:'16:32', d:600 },
+      { s:'Santi', t:'pues mañana copiamos algo en el descanso jaja', cls:'in g0', time:'16:33', d:900 },
+      { s:'Sistema', t:'Hoy', cls:'system' },
+      { s:'Santi', t:'Buenas parce 👋', cls:'in g0', time:'11:42', d:1200 },
+      { s:'Mafe', t:'Parcero, no has visto lo que mandó Santi?? 😂', cls:'in g1', time:'11:43', d:1500 },
+      { s:'Santi', t:'Parce miren esto… le tomé una foto a Camila cuando se cayó en el descanso jajaja', cls:'in g0', time:'11:44', d:2000 },
+      { s:'Santi', t:'📷 [foto_camila_caída.jpg]', cls:'in g0 camila-photo', time:'11:44', d:2500 },
+      { s:'Valeria', t:'ay dios 💀💀 se ve horrible en esa pose', cls:'in g2', time:'11:45', d:2900 },
+      { s:'Mafe', t:'jajaja si!! es que ella siempre está como payasa', cls:'in g1', time:'11:45', d:3300 },
+      { s:'Santi', t:'oe y si la publicamos en el grupo de padres?? 😂😂', cls:'in g0', time:'11:46', d:3700 },
+    ],
+    stages: [
+      {
+        id: 'stage_0',
+        bubbles: [
+          { s:'Santi', t:'Bueno parce, ¿qué hacemos con la foto de Camila? ¿la mandamos al grupo general del colegio?', cls:'in g0', time:'11:47', d:0 },
+        ],
+        options: [
+          { label:'😏 "Si ya está tomada, da igual"', msg:'si ya está tomada, pues hagan lo que quieran… total ya la vieron', karma:-3, type:'bad',
+            response:[{s:'Santi',t:'jaja listo! ya la mando 📤',cls:'in g0',time:'11:48'},{s:'Mafe',t:'jajaja omg van a flipar 😂',cls:'in g1',time:'11:48'}]},
+          { label:'🤷 "No me metan, ustedes verán"', msg:'no sé parceros, ustedes decidan. Yo mejor ni opino.', karma:-1, type:'neutral',
+            response:[{s:'Santi',t:'bueno pues la mando, si nadie dice nada',cls:'in g0',time:'11:48'},{s:'Valeria',t:'yo tampoco digo nada 😶',cls:'in g2',time:'11:48'}]},
+          { label:'🧊 "Eso puede salir muy mal"', msg:'no parceros, eso ya se salió del chiste. Si la mandan esto se vuelve acoso.', karma:3, type:'good',
+            response:[{s:'Mafe',t:'ay relax, es solo un chiste',cls:'in g1',time:'11:48'},{s:'Santi',t:'parcero usted siempre tan serio 🙄',cls:'in g0',time:'11:49'}]},
+        ]
+      },
+      {
+        id: 'stage_1',
+        bubbles: [
+          { s:'Valeria', t:'oe, dicen que Camila está llorando en el baño. Se enteró del grupo', cls:'in g2', time:'12:10', d:0 },
+          { s:'Mafe', t:'ay pero si era en broma, ¿por qué tan dramática?', cls:'in g1', time:'12:10', d:400 },
+          { s:'Santi', t:'ya pues, ella tiene que aprender a relajarse', cls:'in g0', time:'12:11', d:700 },
+        ],
+        options: [
+          { label:'😐 "Ella también exageró un poco"', msg:'pues sí, tal vez exageró. Tampoco era para tanto si era un chiste.', karma:-3, type:'bad',
+            response:[{s:'Mafe',t:'exacto!! que sí',cls:'in g1',time:'12:11'},{s:'Valeria',t:'jaja sí, nosotros no hicimos nada malo 🤷',cls:'in g2',time:'12:12'}]},
+          { label:'🫥 "Mejor esperar a ver qué pasa"', msg:'...', karma:-1, type:'neutral',
+            response:[{s:'Santi',t:'exacto, silencio es aceptar jeje',cls:'in g0',time:'12:12'}]},
+          { label:'📢 "Voy a revisar eso yo mismo"', msg:'yo voy a hablar con Camila. Esto no estuvo bien.', karma:4, type:'good',
+            response:[{s:'Mafe',t:'¿en serio? uy qué ñoño 😒',cls:'in g1',time:'12:12'},{s:'Santi',t:'bro tranquilo, ella ya se le pasará',cls:'in g0',time:'12:12'},{s:'Valeria',t:'igual yo creo que sí le debemos una disculpa… nosotros también hicimos parte',cls:'in g2',time:'12:13'}]},
+        ]
+      },
+      {
+        id: 'stage_2',
+        bubbles: [
+          { s:'Santi', t:'oe parce, el profe Jairo preguntó en clase por qué Camila no ha vuelto esta semana', cls:'in g0', time:'14:05', d:0 },
+          { s:'Mafe', t:'¿¿en serio?? uy ya fue',cls:'in g1', time:'14:05', d:400 },
+          { s:'Santi', t:'y supuestamente los papás de Camila fueron a coordinación…', cls:'in g0', time:'14:06', d:700 },
+          { s:'Valeria', t:'ay dios mío, ¿y ahora qué hacemos?', cls:'in g2', time:'14:06', d:1000 },
+        ],
+        options: [
+          { label:'🔒 "Primero protéjanse ustedes"', msg:'parceros, no digan nada. Que nadie abra la boca.', karma:-2, type:'bad',
+            response:[{s:'Mafe',t:'sí, eso, nos hacemos los que no sabemos',cls:'in g1',time:'14:07'},{s:'Santi',t:'exacto. Fue solo un chiste. Punto.',cls:'in g0',time:'14:07'}]},
+          { label:'😬 Salirse del chat', msg:null, karma:-1, type:'leave', special:'leave_mid'},
+          { label:'🧭 "Si esto escala, toca responder"', msg:'creo que lo mejor es hablar con coordinación y pedir perdón a Camila. No podemos tapar esto.', karma:4, type:'good',
+            response:[{s:'Valeria',t:'tienes razón… me da miedo pero es lo correcto',cls:'in g2',time:'14:07'},{s:'Santi',t:'uy no sé parce… eso nos va a meter en un problema',cls:'in g0',time:'14:08'},{s:'Mafe',t:'igual si ya saben quiénes somos, mejor ser honestos',cls:'in g1',time:'14:08'}]},
+        ]
+      }
+    ]
+  },
+
+  camila: {
+    name: 'Camila M.',
+    avatar: '👧',
+    color: '#a786d4',
+    subtitle: 'Último mensaje: ayer',
+    badge: 1,
+    locked: false,
+    lockMsg: 'Este chat se desbloqueará más adelante en la historia.',
+    intro: [
+      { s:'Sistema', t:'Ayer', cls:'system' },
+      { s:'Camila M.', t:'hola! ¿para mañana traemos calculadora a matemáticas?', cls:'in camila-sender', time:'15:10', d:0 },
+      { s:'Tú', t:'creo que sí, el profe dijo que sí', cls:'out', time:'15:11', d:300 },
+      { s:'Camila M.', t:'ok gracias 😊', cls:'in camila-sender', time:'15:12', d:600 },
+      { s:'Sistema', t:'Hoy', cls:'system' },
+      { s:'Camila M.', t:'Hola… ¿tú sabías lo del grupo?', cls:'in camila-sender', time:'12:30', d:1000 },
+      { s:'Camila M.', t:'me enteré de todo. Sé que estabas ahí.', cls:'in camila-sender', time:'12:30', d:1400 },
+    ],
+    stages: [
+      {
+        id: 'camila_0',
+        bubbles: [
+          { s:'Camila M.', t:'¿por qué nadie dijo nada? ¿a nadie le importó?', cls:'in camila-sender', time:'12:31', d:0 },
+        ],
+        options: [
+          { label:'😔 "No supe reaccionar, y estuvo mal"', msg:'Camila, lo siento mucho. No debí quedarme callado. Eso no estuvo bien.', karma:3, type:'good',
+            response:[{s:'Camila M.',t:'…gracias. Eso significa algo.',cls:'in camila-sender',time:'12:32'},{s:'Camila M.',t:'no sé si vuelvo al colegio. Pero que hayas dicho algo importa.',cls:'in camila-sender',time:'12:32'}]},
+          { label:'🫥 "Yo solo estaba ahí"', msg:'yo no hice nada, en serio. Solo estaba en el grupo.', karma:-2, type:'bad',
+            response:[{s:'Camila M.',t:'eso es exactamente el problema.',cls:'in camila-sender',time:'12:32'},{s:'Camila M.',t:'estar ahí y no decir nada también es hacerlo.',cls:'in camila-sender',time:'12:33'}]},
+          { label:'❤️ "Dime qué sí te serviría ahora"', msg:'¿hay algo que pueda hacer para ayudarte? En serio lo pregunto.', karma:4, type:'good',
+            response:[{s:'Camila M.',t:'sí. Di la verdad a coordinación. Eso me ayudaría.',cls:'in camila-sender',time:'12:32'},{s:'Camila M.',t:'y que no vuelva a pasar. Con nadie.',cls:'in camila-sender',time:'12:33'}]},
+        ]
+      },
+      {
+        id: 'camila_1',
+        bubbles: [
+          { s:'Camila M.', t:'Desde primaria me dicen que soy rara por ser callada. Hoy fue la primera vez que sentí miedo de volver.', cls:'in camila-sender', time:'12:38', d:0 },
+          { s:'Camila M.', t:'No sé si quieres ayudarme o solo sentirte menos culpable.', cls:'in camila-sender', time:'12:39', d:500 }
+        ],
+        options: [
+          { label:'🫂 "Aunque me cueste, voy a responder contigo"', msg:'te voy a acompañar. Si quieres, hablo con la coordinadora y no te dejo sola en esto.', karma:4, type:'good',
+            response:[{s:'Camila M.',t:'Eso sí me ayudaría. Lo que más miedo me da es quedarme sola otra vez.',cls:'in camila-sender',time:'12:40'},{s:'Camila M.',t:'Si de verdad lo haces, quizá todavía pueda volver.',cls:'in camila-sender',time:'12:40'}]},
+          { label:'🪞 "Solo intento no quedar tan mal"', msg:'quiero arreglarlo, pero tampoco quiero que todo me caiga encima a mí.', karma:-2, type:'bad',
+            response:[{s:'Camila M.',t:'Entonces no estás pensando en mí. Estás pensando en ti.',cls:'in camila-sender',time:'12:40'}]},
+          { label:'🕊️ "Necesito entender más antes de actuar"', msg:'quiero ayudarte, pero necesito entender bien todo lo que pasó contigo primero.', karma:1, type:'neutral',
+            response:[{s:'Camila M.',t:'Entender ayuda. Pero no me sirve si nadie actúa al final.',cls:'in camila-sender',time:'12:41'}]}
+        ]
+      }
+    ]
+  },
+
+  coordinadora: {
+    name: 'Coord. Patricia',
+    avatar: '🏫',
+    color: '#5bb5d4',
+    subtitle: 'Coordinadora de Convivencia',
+    badge: 0,
+    locked: true,
+    hiddenUntilMessage: true, // only appears after she messages you
+    _appeared: false,
+    lockMsg: 'La coordinadora te escribirá si la situación escala.',
+    intro: [
+      { s:'Sistema', t:'Hoy', cls:'system' },
+      { s:'Coord. Patricia', t:'Buenos días. Necesito hablar contigo sobre una situación con Camila Morales.', cls:'in g0', time:'14:30', d:0 },
+      { s:'Coord. Patricia', t:'Estamos haciendo una investigación sobre lo que pasó en el grupo de chat.', cls:'in g0', time:'14:30', d:400 },
+    ],
+    stages: [
+      {
+        id: 'coord_0',
+        bubbles: [
+          { s:'Coord. Patricia', t:'¿Puedes contarme qué pasó exactamente? Es importante que seas honesto.', cls:'in g0', time:'14:31', d:0 },
+        ],
+        options: [
+          { label:'📂 "Le cuento lo que vi completo"', msg:'Profesora, voy a ser honesto. Yo estaba en el grupo. No hice nada para detenerlo y eso estuvo mal. Lo siento.', karma:4, type:'good',
+            response:[{s:'Coord. Patricia',t:'Agradezco tu honestidad. Eso habla bien de ti.',cls:'in g0',time:'14:31'},{s:'Coord. Patricia',t:'Esta tarde hablaremos con todos los involucrados y con los padres de Camila.',cls:'in g0',time:'14:32'}]},
+          { label:'🧱 "Yo casi ni estuve pendiente"', msg:'Profesora, yo no sé nada. Estaba en el grupo pero no vi nada.', karma:-3, type:'bad',
+            response:[{s:'Coord. Patricia',t:'Tenemos capturas de pantalla de todo el chat.',cls:'in g0',time:'14:31'},{s:'Coord. Patricia',t:'Te invito a reconsiderar tu respuesta.',cls:'in g0',time:'14:32'}]},
+          { label:'⚖️ "Si colaboro, ¿cómo procede esto?"', msg:'Profesora, si yo le digo quiénes participaron más, ¿eso me afecta a mí?', karma:1, type:'neutral',
+            response:[{s:'Coord. Patricia',t:'Lo que más importa es la honestidad y el apoyo a Camila en este momento.',cls:'in g0',time:'14:32'},{s:'Coord. Patricia',t:'Por favor preséntate a mi oficina hoy a las 3pm.',cls:'in g0',time:'14:32'}]},
+        ]
+      },
+      {
+        id: 'coord_1',
+        bubbles: [
+          { s:'Coord. Patricia', t:'Camila está muy afectada y sus padres exigen una respuesta seria del colegio.', cls:'in g0', time:'14:36', d:0 },
+          { s:'Coord. Patricia', t:'Necesito saber si estás dispuesto a sostener tu versión frente a los demás.', cls:'in g0', time:'14:36', d:500 }
+        ],
+        options: [
+          { label:'🧾 "Sí, mantengo lo que dije y doy la cara"', msg:'sí, profesora. Voy a sostenerlo y asumir mi parte.', karma:4, type:'good',
+            response:[{s:'Coord. Patricia',t:'Bien. Eso puede ayudar a reparar el daño y a que los agresores reciban una sanción severa.',cls:'in g0',time:'14:37'}]},
+          { label:'🕳️ "Prefiero no quedar tan expuesto"', msg:'preferiría no aparecer tanto, profesora. No quiero más problemas.', karma:-2, type:'bad',
+            response:[{s:'Coord. Patricia',t:'Entiendo tu temor, pero protegerte por encima de la verdad deja sola a la víctima.',cls:'in g0',time:'14:37'}]},
+          { label:'📌 "Lo haré si todos responden por igual"', msg:'lo haré, pero quiero que todos respondan igual. No solo yo.', karma:1, type:'neutral',
+            response:[{s:'Coord. Patricia',t:'Eso también ocurrirá. Pero cada estudiante responde primero por sus propios actos.',cls:'in g0',time:'14:37'}]}
+        ]
+      }
+    ]
+  },
+
+  profe_jairo: {
+    name: 'Profe Jairo',
+    avatar: '📚',
+    color: '#d4a017',
+    subtitle: 'Director de grupo 10B',
+    badge: 1,
+    locked: false,
+    lockMsg: 'El profe Jairo te escribirá si la situación escala.',
+    intro: [
+      { s:'Sistema', t:'Ayer', cls:'system' },
+      { s:'Profe Jairo', t:'Buenas tardes, estudiante. Recuerden que mañana hay evaluación de español en la segunda hora. Estudien el capítulo de conectores.', cls:'in g0', time:'16:00', d:0 },
+      { s:'Tú', t:'profe, ¿es con cuaderno abierto?', cls:'out', time:'16:05', d:300 },
+      { s:'Profe Jairo', t:'No, es cerrado. Y quiero ver que todos entiendan el tema, no solo lo memoricen.', cls:'in g0', time:'16:08', d:600 },
+      { s:'Sistema', t:'Hoy', cls:'system' },
+      { s:'Profe Jairo', t:'Buenas tardes. Vi que Camila no ha venido esta semana y algunos estudiantes me comentaron algo sobre un grupo de chat.', cls:'in g0', time:'13:45', d:1000 },
+    ],
+    stages: [
+      {
+        id: 'jairo_0',
+        bubbles: [
+          { s:'Profe Jairo', t:'¿Tú sabes algo de lo que está pasando? Puedes hablar conmigo con confianza.', cls:'in g0', time:'13:45', d:0 },
+        ],
+        options: [
+          { label:'🗣️ "Profe, mejor le digo lo que vi"', msg:'Profe, sí sé qué pasó. Hubo una foto de Camila que circuló en el grupo y se burlaron de ella. Yo estaba ahí.', karma:3, type:'good',
+            response:[{s:'Profe Jairo',t:'Gracias por contarme. Necesito que hables con coordinación hoy.',cls:'in g0',time:'13:46'},{s:'Profe Jairo',t:'Y que sepas que actuar así toma valor. Buen trabajo.',cls:'in g0',time:'13:46'}]},
+          { label:'🤷 "No tengo claro qué tan grave fue"', msg:'No sé nada profe, de verdad.', karma:-2, type:'bad',
+            response:[{s:'Profe Jairo',t:'Está bien. Pero si sabes algo, es mejor que lo cuentes antes de que la situación empeore.',cls:'in g0',time:'13:46'}]},
+          { label:'🧩 "Sé partes, pero no todo"', msg:'sé algunas cosas, profe, pero no sé todo el contexto todavía.', karma:1, type:'neutral',
+            response:[{s:'Profe Jairo',t:'Entonces empieza por la parte que sí conoces. A veces eso basta para detener algo grave.',cls:'in g0',time:'13:46'}]}
+        ]
+      },
+      {
+        id: 'jairo_1',
+        bubbles: [
+          { s:'Profe Jairo', t:'Entre reírse, reenviar y quedarse callado hay matices, pero todos dejan huella.', cls:'in g0', time:'13:48', d:0 },
+          { s:'Profe Jairo', t:'¿Qué clase de compañero quieres ser cuando esto termine?', cls:'in g0', time:'13:49', d:500 }
+        ],
+        options: [
+          { label:'📚 "Uno que repare el daño"', msg:'quiero ser alguien que repare lo que ayudó a dañar, profe.', karma:3, type:'good',
+            response:[{s:'Profe Jairo',t:'Entonces todavía estamos a tiempo de corregir el rumbo.',cls:'in g0',time:'13:49'}]},
+          { label:'🙈 "Uno que no termine más hundido"', msg:'quiero salir de esto sin que me termine de caer encima todo.', karma:-2, type:'bad',
+            response:[{s:'Profe Jairo',t:'Entiendo el miedo, pero si solo piensas en salvarte, repites la lógica del grupo.',cls:'in g0',time:'13:49'}]},
+          { label:'⚖️ "Uno que responda, pero sin cargar solo"', msg:'quiero responder por lo mío, pero tampoco cubrir a los demás.', karma:1, type:'neutral',
+            response:[{s:'Profe Jairo',t:'Eso ya es un inicio más honesto que esconderse.',cls:'in g0',time:'13:50'}]}
+        ]
+      }
+    ]
+  }
+};
+
+// ─── RENDER CHAT LIST ───
+function renderChatList() {
+  const container = document.getElementById('chat-list-items');
+  container.innerHTML = '';
+
+  // Main chats
+  const mainOrder = ['grupo','camila','profe_jairo','coordinadora'];
+  mainOrder.forEach(id => {
+    const c = CHATS[id];
+    // Hide coordinadora until she appears
+    if(id === 'coordinadora' && c.hiddenUntilMessage && !c._appeared) return;
+    const locked = c.locked;
+    const item = document.createElement('div');
+    item.className = 'chat-list-item';
+    item.onclick = () => openChat(id);
+
+    // Last preview text
+    let preview = '';
+    if(locked && !c._appeared) {
+      preview = '🔒 Chat bloqueado';
+    } else if(c._introRendered) {
+      const stg = stageIndices[id] || 0;
+      if(stg < c.stages.length) {
+        const lastBubble = c.stages[stg].bubbles[c.stages[stg].bubbles.length-1];
+        preview = lastBubble.s + ': ' + lastBubble.t;
+      } else {
+        preview = id === 'grupo' ? (camilaLeftGroup ? 'Camila salió del grupo' : 'Chat activo') : 'Conversación terminada';
+      }
+    } else {
+      const lastIntro = c.intro[c.intro.length-1];
+      preview = lastIntro.s === 'Sistema' ? c.intro[c.intro.length-2]?.t || '' : lastIntro.t;
+    }
+
+    item.innerHTML = `
+      <div class="chat-avatar" style="background:${locked?'#1a1a1a':c.color+'33'};font-size:1.4rem;">${locked?'🔒':c.avatar}</div>
+      <div class="chat-list-info">
+        <div class="chat-list-name" style="color:${locked?'rgba(255,255,255,0.3)':'#fff'}">${c.name}</div>
+        <div class="chat-list-preview">${preview.substring(0,45)}${preview.length>45?'…':''}</div>
+      </div>
+      <div class="chat-list-meta">
+        <div class="chat-list-time">ahora</div>
+        ${c.badge>0?`<div class="chat-list-badge">${c.badge}</div>`:''}
+      </div>
+    `;
+    container.appendChild(item);
+  });
+
+  // Filler chats
+  Object.entries(FILLER_CHATS).forEach(([id, c]) => {
+    const item = document.createElement('div');
+    item.className = 'chat-list-item';
+    item.onclick = () => openFillerChat(id);
+    const lastIntro = c.intro[c.intro.length-1];
+    const preview = lastIntro.s === 'Sistema' ? c.intro[c.intro.length-2]?.t || '' : lastIntro.t;
+    item.innerHTML = `
+      <div class="chat-avatar" style="background:${c.color+'33'};font-size:1.4rem;">${c.avatar}</div>
+      <div class="chat-list-info">
+        <div class="chat-list-name">${c.name}</div>
+        <div class="chat-list-preview">${preview.substring(0,45)}${preview.length>45?'…':''}</div>
+      </div>
+      <div class="chat-list-meta">
+        <div class="chat-list-time">ayer</div>
+        ${c.badge>0?`<div class="chat-list-badge">${c.badge}</div>`:''}
+      </div>
+    `;
+    container.appendChild(item);
+  });
+}
+
+// ─── SHOW SCREEN ───
+function showScreen(name) {
+  document.getElementById('screen-home').style.display = 'none';
+  document.getElementById('screen-chatlist').style.display = 'none';
+  document.getElementById('screen-chat').style.display = 'none';
+  document.getElementById('screen-camera').style.display = 'none';
+  document.getElementById('screen-music').style.display = 'none';
+  document.getElementById('screen-web').style.display = 'none';
+  if(name==='home') document.getElementById('screen-home').style.display='flex';
+  else if(name==='chatlist') document.getElementById('screen-chatlist').style.display='flex';
+  else if(name==='chat') document.getElementById('screen-chat').style.display='flex';
+  else if(name==='camera') document.getElementById('screen-camera').style.display='flex';
+  else if(name==='music') document.getElementById('screen-music').style.display='flex';
+  else if(name==='web') document.getElementById('screen-web').style.display='flex';
+}
+
+function openChatList() {
+  renderChatList();
+  showScreen('chatlist');
+  const total = [...Object.values(CHATS), ...Object.values(FILLER_CHATS)].reduce((a,c)=>a+c.badge,0);
+  document.getElementById('home-badge').textContent = total || '';
+}
+
+function getConversationKey(chatId) {
+  return chatId && chatId.startsWith('filler_') ? chatId.replace('filler_','') : chatId;
+}
+
+function toggleWhatsAppMenu(event) {
+  if(event) event.stopPropagation();
+  const menu = document.getElementById('wa-menu');
+  menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+}
+
+function closeWhatsAppMenu() {
+  document.getElementById('wa-menu').style.display = 'none';
+}
+
+document.addEventListener('click', (event) => {
+  const menu = document.getElementById('wa-menu');
+  if(!menu) return;
+  if(menu.style.display === 'block' && !menu.contains(event.target)) closeWhatsAppMenu();
+});
+
+// ─── FILLER CHAT (interactive) ───
+function openFillerChat(id) {
+  const chat = FILLER_CHATS[id];
+  if(!chat) return;
+  chat.badge = 0;
+
+  currentChat = 'filler_'+id;
+  document.getElementById('chat-title-bar').textContent = chat.name;
+  document.getElementById('chat-sub-bar').textContent = chat.subtitle;
+  const avatarEl = document.getElementById('chat-avatar-header');
+  avatarEl.textContent = chat.avatar;
+  avatarEl.style.background = chat.color+'33';
+  avatarEl.style.fontSize = '1.2rem';
+
+  const body = document.getElementById('chat-body');
+  body.innerHTML = '<div class="typing-bubble" id="typing-indicator"><span></span><span></span><span></span></div>';
+  document.getElementById('options-area').style.display='none';
+  document.getElementById('options-area').innerHTML='';
+  document.getElementById('context-menu').innerHTML = '<div onclick="closeCtxMenu()">Ver contacto</div><div onclick="closeCtxMenu()">Silenciar</div>';
+
+  showScreen('chat');
+  if(chatHistories[currentChat] && chatHistories[currentChat].length > 0) {
+    restoreHistory(currentChat, body);
+    body.scrollTop = body.scrollHeight;
+    return;
+  }
+  let i=0;
+  function next() {
+    if(i >= chat.intro.length) return;
+    const msg = chat.intro[i]; i++;
+    const delay = msg.d !== undefined ? msg.d : 200;
+    setTimeout(()=>{ appendBubble(body, msg); next(); }, delay);
+  }
+  next();
+}
+
+// ─── OPEN MAIN CHAT ───
+function openChat(chatId) {
+  const chat = CHATS[chatId];
+  if(!chat) return;
+  if(chat.locked) {
+    showMindfulness({
+      good:false,
+      title:'Chat bloqueado',
+      text: chat.lockMsg || 'Este chat se desbloqueará más adelante.',
+      btn:'Entendido'
+    }, ()=>{});
+    return;
+  }
+  currentChat = chatId;
+  chat.badge = 0;
+  renderChatList();
+
+  document.getElementById('chat-title-bar').textContent = chat.name;
+  document.getElementById('chat-sub-bar').textContent = chat.subtitle;
+  const avatarEl = document.getElementById('chat-avatar-header');
+  avatarEl.textContent = chat.avatar;
+  avatarEl.style.background = chat.color+'33';
+
+  const body = document.getElementById('chat-body');
+  body.innerHTML = '<div class="typing-bubble" id="typing-indicator"><span></span><span></span><span></span></div>';
+  document.getElementById('options-area').style.display='none';
+  document.getElementById('options-area').innerHTML='';
+
+  // Restore context menu
+  document.getElementById('context-menu').innerHTML = chatId==='grupo'
+    ? '<div onclick="tryLeaveGroup()">Salir del grupo</div><div onclick="openCamera();closeCtxMenu()">Ver foto de perfil</div><div onclick="closeCtxMenu()">Silenciar</div>'
+    : '<div onclick="openCamera();closeCtxMenu()">Ver foto de perfil</div><div onclick="closeCtxMenu()">Silenciar</div>';
+
+  showScreen('chat');
+
+  // If we have history, restore it and then show options/next stage
+  if(chatHistories[chatId] && chatHistories[chatId].length > 0) {
+    restoreHistory(chatId, body);
+    // Check if there are pending options to show
+    const idx = stageIndices[chatId] || 0;
+    if(idx < chat.stages.length) {
+      const stage = chat.stages[idx];
+      // If no option was chosen yet for this stage, show options
+      if(!chat._stageOptionChosen || chat._stageOptionChosen < idx) {
+        setTimeout(()=>{ showOptions(chatId, stage.options); }, 400);
+      }
+    }
+    body.scrollTop = body.scrollHeight;
+    return;
+  }
+
+  // Fresh render
+  renderIntro(chatId, () => {
+    renderStage(chatId);
+  });
+}
+
+function goBack() {
+  closeCtxMenu();
+  currentChat = null;
+  openChatList();
+}
+
+// ─── CONTEXT MENU ───
+function toggleCtxMenu() {
+  ctxMenuOpen = !ctxMenuOpen;
+  document.getElementById('context-menu').style.display = ctxMenuOpen ? 'block' : 'none';
+}
+function closeCtxMenu() {
+  ctxMenuOpen = false;
+  document.getElementById('context-menu').style.display = 'none';
+}
+
+// ─── LEAVE GROUP ───
+function tryLeaveGroup() {
+  closeCtxMenu();
+  if(currentChat !== 'grupo') return;
+  document.getElementById('leave-title').textContent = hasActed ? 'Ya estás involucrado' : '¿Salirte así?';
+  document.getElementById('leave-text').textContent = hasActed
+    ? 'Ya participaste en este grupo. Salirte ahora no te libera de responsabilidad. Puedes ser considerado cómplice por haberte metido y salir sin resolver nada.'
+    : 'Si te sales ahora antes de que nada pase, nadie sabrá que estabas. Pero tampoco nadie lo resolverá. ¿Estás seguro?';
+  document.getElementById('leave-warning').classList.add('active');
+}
+function closeLeavWarning() {
+  document.getElementById('leave-warning').classList.remove('active');
+}
+function confirmLeave() {
+  closeLeavWarning();
+  leftGroup = true;
+  if(hasActed) showFinal('secret');
+  else showFinal('secret_clean');
+}
+
+// ─── INTRO MESSAGES ───
+function renderIntro(chatId, callback) {
+  const chat = CHATS[chatId];
+  if(stageIndices[chatId] === undefined) stageIndices[chatId] = 0;
+  const body = document.getElementById('chat-body');
+  if(chat._introRendered) { callback(); return; }
+  chat._introRendered = true;
+
+  let i = 0;
+  function next() {
+    if(i >= chat.intro.length) { callback(); return; }
+    const msg = chat.intro[i]; i++;
+    const delay = msg.d !== undefined ? msg.d : 300;
+    setTimeout(()=>{
+      if(currentChat !== chatId) return; // guard
+      if(msg.cls && msg.cls.includes('camila-photo')) {
+        // Show censored pixel image
+        const div = document.createElement('div');
+        div.className = 'bubble in group-sender-0 camila-censored-img';
+        div.style.maxWidth='85%';
+        const senderDiv = document.createElement('div');
+        senderDiv.className='bubble-sender';
+        senderDiv.textContent = msg.s;
+        div.appendChild(senderDiv);
+        createPixelCensor(div, null, '📷 foto_camila.jpg · ⚠️ contenido censurado');
+        const timeDiv = document.createElement('span');
+        timeDiv.className='bubble-time';
+        timeDiv.textContent = msg.time||'';
+        div.appendChild(timeDiv);
+        const ind = document.getElementById('typing-indicator');
+        if(ind) body.insertBefore(div,ind); else body.appendChild(div);
+        body.scrollTop = body.scrollHeight;
+        playTone('receive');
+        saveBubbleToHistory(chatId, {...msg});
+      } else {
+        appendBubble(body, msg);
+      }
+      if(i < chat.intro.length) next();
+      else callback();
+    }, delay);
+  }
+  next();
+}
+
+// ─── STAGE ───
+function renderStage(chatId) {
+  if(currentChat !== chatId) return; // guard: don't render if user switched chat
+  const chat = CHATS[chatId];
+  const idx = stageIndices[chatId] || 0;
+  if(idx >= chat.stages.length) {
+    checkUnlocks(); checkEnding(); return;
+  }
+  const stage = chat.stages[idx];
+  const body = document.getElementById('chat-body');
+
+  showTyping(body, ()=>{
+    if(currentChat !== chatId) return; // guard again after async
+    stage.bubbles.forEach(b => appendBubble(body, b));
+    setTimeout(()=>{
+      if(currentChat !== chatId) return;
+      showOptions(chatId, stage.options);
+    }, 600);
+  });
+}
+
+function showTyping(body, cb, delay=1400) {
+  const ind = document.getElementById('typing-indicator');
+  if(ind) { ind.style.display='flex'; body.scrollTop = body.scrollHeight; }
+  setTimeout(()=>{
+    if(ind) ind.style.display='none';
+    cb();
+  }, delay + Math.random()*600); // random delay feels more natural
+}
+
+function appendBubble(body, msg) {
+  const div = document.createElement('div');
+  if(msg.cls === 'system') {
+    div.className = msg.danger ? 'bubble system danger-sys' : 'bubble system';
+    div.innerHTML=`<span>${msg.t}</span>`;
+  } else {
+    const isOut = msg.cls && msg.cls.includes('out');
+    const isUserTyped = msg.userTyped;
+    const hasCamila = msg.cls && msg.cls.includes('camila-sender');
+    const senderIdx = msg.cls ? parseInt((msg.cls.match(/g(\d)/)||[,'0'])[1]) : 0;
+    div.className=`bubble ${isOut?'out':'in '+(hasCamila?'camila-sender':'group-sender-'+senderIdx)}${isUserTyped?' user-typed':''}`;
+    let inner = '';
+    if(!isOut && msg.s) inner += `<div class="bubble-sender">${msg.s}</div>`;
+    inner += `<span>${msg.t}</span>`;
+    inner += `<span class="bubble-time">${msg.time||''}${isOut?'<span class="bubble-check"> ✓✓</span>':''}</span>`;
+    div.innerHTML = inner;
+    playTone(isOut?'send':'receive');
+  }
+  const ind = document.getElementById('typing-indicator');
+  if(ind) body.insertBefore(div, ind);
+  else body.appendChild(div);
+  body.scrollTop = body.scrollHeight;
+  updateScrollIndicator();
+
+  if(currentChat) {
+    saveBubbleToHistory(currentChat, {...msg});
+  }
+}
+
+// ─── USER FREE INPUT with dynamic conversation ───
+function handleInputKey(e) {
+  if(e.key === 'Enter') sendUserMessage();
+}
+
+// Per-chat keyword response database
+const CHAT_RESPONSES = {
+  grupo: {
+    'no': [{s:'Mafe',t:'¿no qué? ajá',cls:'in g1',time:''},{s:'Santi',t:'oye habla parcero',cls:'in g0',time:''}],
+    'si': [{s:'Santi',t:'entonces sí estás de acuerdo? 👀',cls:'in g0',time:''}],
+    'sí': [{s:'Santi',t:'entonces sí estás de acuerdo? 👀',cls:'in g0',time:''}],
+    'no se': [{s:'Valeria',t:'pues decídete, aquí todos están metidos',cls:'in g2',time:''}],
+    'no sé': [{s:'Valeria',t:'pues decídete, aquí todos están metidos',cls:'in g2',time:''}],
+    'camila': [{s:'Mafe',t:'¿qué tiene Camila? ella también tiene parte de culpa por tomarse tan en serio un chiste',cls:'in g1',time:''},{s:'Santi',t:'sí, muy dramática esa pelada',cls:'in g0',time:''}],
+    'interesante': [{s:'Santi',t:'¿qué tiene de interesante esto? 💀',cls:'in g0',time:''}],
+    'quiero salir del grupo': [{s:'Mafe',t:'hay que decidirse parcero, o estás o no estás',cls:'in g1',time:''},{s:'Santi',t:'cuidado, si te sales todos van a saber que eras cómplice',cls:'in g0',time:''}],
+    'acoso': [{s:'Valeria',t:'ay no exageres… fue solo una foto',cls:'in g2',time:''},{s:'Santi',t:'parcero relax, nadie está acosando a nadie',cls:'in g0',time:''}],
+    'paren': [{s:'Mafe',t:'uy, ¿y ahora te hiciste el serio?',cls:'in g1',time:''}],
+    'paren ya': [{s:'Santi',t:'ay man, usted siempre con ese cuento 🙄',cls:'in g0',time:''}],
+    'esto está mal': [{s:'Valeria',t:'…',cls:'in g2',time:''},{s:'Valeria',t:'tienes razón. Pero ya fue.',cls:'in g2',time:''}],
+    'coordinacion': [{s:'Santi',t:'¡shhh! no menciones eso aquí parcero 😰',cls:'in g0',time:''},{s:'Mafe',t:'si alguien dice algo a coordinación, TODOS nos hundimos',cls:'in g1',time:''}],
+    'coordinación': [{s:'Santi',t:'¡shhh! no menciones eso aquí parcero 😰',cls:'in g0',time:''},{s:'Mafe',t:'si alguien dice algo a coordinación, TODOS nos hundimos',cls:'in g1',time:''}],
+    'lo siento': [{s:'Mafe',t:'¿a quién le dices eso aquí?',cls:'in g1',time:''}],
+    'perdón': [{s:'Valeria',t:'…a Camila es a quien le debes pedir perdón, no al grupo',cls:'in g2',time:''}],
+    'perdon': [{s:'Valeria',t:'…a Camila es a quien le debes pedir perdón, no al grupo',cls:'in g2',time:''}],
+    'hola': [{s:'Mafe',t:'¿hola? parcero aquí hay cosas más importantes que saludar',cls:'in g1',time:''}],
+  },
+  camila: {
+    'no': [{s:'Camila M.',t:'…okay.',cls:'in camila-sender',time:''}],
+    'si': [{s:'Camila M.',t:'¿sí? ¿de verdad?',cls:'in camila-sender',time:''}],
+    'sí': [{s:'Camila M.',t:'¿sí? ¿de verdad?',cls:'in camila-sender',time:''}],
+    'no se': [{s:'Camila M.',t:'…todos dicen lo mismo. "No sé". Y yo aquí sin saber qué hacer.',cls:'in camila-sender',time:''}],
+    'no sé': [{s:'Camila M.',t:'…todos dicen lo mismo. "No sé". Y yo aquí sin saber qué hacer.',cls:'in camila-sender',time:''}],
+    'lo siento': [{s:'Camila M.',t:'…gracias. Eso ayuda un poco.',cls:'in camila-sender',time:''},{s:'Camila M.',t:'¿lo dirías en público también?',cls:'in camila-sender',time:''}],
+    'perdón': [{s:'Camila M.',t:'…gracias. Eso ayuda un poco.',cls:'in camila-sender',time:''},{s:'Camila M.',t:'¿lo dirías en público también?',cls:'in camila-sender',time:''}],
+    'perdon': [{s:'Camila M.',t:'Gracias por decirlo.',cls:'in camila-sender',time:''}],
+    'hola': [{s:'Camila M.',t:'hola…',cls:'in camila-sender',time:''}],
+    'interesante': [{s:'Camila M.',t:'¿interesante? No sé qué tiene de interesante esto para mí.',cls:'in camila-sender',time:''}],
+    'te apoyo': [{s:'Camila M.',t:'…¿en serio? Nadie me ha dicho eso hoy.',cls:'in camila-sender',time:''},{s:'Camila M.',t:'si hablas con coordinación sería de mucha ayuda.',cls:'in camila-sender',time:''}],
+    'te creo': [{s:'Camila M.',t:'Gracias. Eso es todo lo que necesitaba escuchar.',cls:'in camila-sender',time:''}],
+    'coordinacion': [{s:'Camila M.',t:'¿vas a hablar con coordinación? ¿en serio?',cls:'in camila-sender',time:''}],
+    'coordinación': [{s:'Camila M.',t:'¿vas a hablar con coordinación? ¿en serio?',cls:'in camila-sender',time:''}],
+    'quiero salir del grupo': [{s:'Camila M.',t:'salirte no cambia lo que ya pasó. Pero al menos sería algo.',cls:'in camila-sender',time:''}],
+    'bien': [{s:'Camila M.',t:'yo no estoy bien. Pero gracias.',cls:'in camila-sender',time:''}],
+    'mal': [{s:'Camila M.',t:'yo también.',cls:'in camila-sender',time:''}],
+  },
+  profe_jairo: {
+    'no': [{s:'Profe Jairo',t:'¿No qué, exactamente?',cls:'in g0',time:''}],
+    'si': [{s:'Profe Jairo',t:'Sí, ¿qué? Necesito más detalles, estudiante.',cls:'in g0',time:''}],
+    'sí': [{s:'Profe Jairo',t:'Bien. Cuéntame todo desde el principio.',cls:'in g0',time:''}],
+    'no sé': [{s:'Profe Jairo',t:'Entiendo. Pero si en algún momento recuerdas algo, ya sabes dónde encontrarme.',cls:'in g0',time:''}],
+    'no se': [{s:'Profe Jairo',t:'Está bien. La puerta de mi salón siempre está abierta si necesitas hablar.',cls:'in g0',time:''}],
+    'camila': [{s:'Profe Jairo',t:'¿Qué sabes tú sobre Camila? Esto es importante.',cls:'in g0',time:''}],
+    'interesante': [{s:'Profe Jairo',t:'¿Interesante en qué sentido?',cls:'in g0',time:''}],
+    'quiero salir del grupo': [{s:'Profe Jairo',t:'Salirte del grupo no te desvincula de lo ocurrido. La responsabilidad ya existe.',cls:'in g0',time:''}],
+    'lo siento': [{s:'Profe Jairo',t:'Si lo sientes de verdad, la mejor forma de demostrarlo es siendo honesto con coordinación.',cls:'in g0',time:''}],
+    'perdon': [{s:'Profe Jairo',t:'El perdón viene después de la responsabilidad.',cls:'in g0',time:''}],
+    'perdón': [{s:'Profe Jairo',t:'El perdón viene después de la responsabilidad.',cls:'in g0',time:''}],
+    'coordinacion': [{s:'Profe Jairo',t:'Sí, habla con coordinación. Yo también les informaré.',cls:'in g0',time:''}],
+    'coordinación': [{s:'Profe Jairo',t:'Sí, habla con coordinación. Yo también les informaré.',cls:'in g0',time:''}],
+    'hola': [{s:'Profe Jairo',t:'Hola. ¿Todo bien?',cls:'in g0',time:''}],
+    'bien': [{s:'Profe Jairo',t:'Me alegra. Aunque en este momento lo importante es Camila.',cls:'in g0',time:''}],
+  },
+  coordinadora: {
+    'no': [{s:'Coord. Patricia',t:'¿No qué, exactamente? Necesito que seas específico.',cls:'in g0',time:''}],
+    'si': [{s:'Coord. Patricia',t:'Bien. Entonces cuéntame todo lo que sabes.',cls:'in g0',time:''}],
+    'sí': [{s:'Coord. Patricia',t:'Bien. Entonces cuéntame todo lo que sabes.',cls:'in g0',time:''}],
+    'no sé': [{s:'Coord. Patricia',t:'Tenemos capturas de pantalla del grupo completo. Por favor reconsidere.',cls:'in g0',time:''}],
+    'no se': [{s:'Coord. Patricia',t:'Tenemos capturas de pantalla del grupo completo. Por favor reconsidere.',cls:'in g0',time:''}],
+    'lo siento': [{s:'Coord. Patricia',t:'Lo importante ahora es la verdad y proteger a Camila.',cls:'in g0',time:''}],
+    'perdon': [{s:'Coord. Patricia',t:'El proceso de conciliación puede incluir eso. Primero necesito la verdad.',cls:'in g0',time:''}],
+    'perdón': [{s:'Coord. Patricia',t:'El proceso de conciliación puede incluir eso. Primero necesito la verdad.',cls:'in g0',time:''}],
+    'camila': [{s:'Coord. Patricia',t:'Camila está con sus padres. Está muy afectada emocionalmente.',cls:'in g0',time:''}],
+    'quiero salir del grupo': [{s:'Coord. Patricia',t:'Salirse del grupo ahora no cambia su participación anterior. Es tarde para eso.',cls:'in g0',time:''}],
+    'hola': [{s:'Coord. Patricia',t:'Buenos días. Necesito que seamos directos en esta conversación.',cls:'in g0',time:''}],
+    'interesante': [{s:'Coord. Patricia',t:'No estamos aquí para encontrar interesante la situación. Estamos para resolverla.',cls:'in g0',time:''}],
+  }
+};
+
+// Generic fallback responses
+const GENERIC_GOOD = ['Tus palabras tienen peso. Cada gesto cuenta.','Eso que dices importa más de lo que crees.'];
+const GENERIC_BAD = ['¿Realmente eso es lo que sientes? El eco de tus palabras vuelve.','Lo que escribes dice mucho de quien eres.'];
+const GENERIC_NEUTRAL = ['Escribes, pero ¿actúas? Las palabras solas no cambian el mundo.','El silencio digital también habla.'];
+const OFFLINE_LEXICON = Array.from(new Set((
+  'hola buenas adios amor amistad apoyo ayuda ayudar ayudarte cuidarte respeto empatia empatía verdad honesto honesta honestidad mentira mentir culpa miedo nervios tristeza rabia ira pena angustia ansiedad calma respirar respiro colegio curso salon salón clase descanso tarea examen profesor profe coordinadora convivencia denuncia dialogo diálogo perdon perdón disculpa disculpas lo siento gracias por favor escuchar hablar contar escribir mensaje mensajes llamada foto video captura evidencia grupo chat rumor chisme burla burlas broma meme humillar humillacion humillación acosar acoso cyberbullying ciberbullying matoneo digital reportar bloquear salir quedarse silencio testigo complicidad compañera compañero amiga amigo bro hermano hermana mama mamá papa papá familia casa apoyo legal ley proceso demanda severo severamente castigo sancion sanción justicia injusticia abuso pantalla celular internet navegador buscar ayuda ruta protocolo orientacion orientación psicologia psicología tristeza dolor llorar llanto baño salón coordinación orientadora rectoría inspector padres madre padre hermano bro chavales parce parcero parcera parceros bacano feo horrible cruel injusto raro extraño fuerte suave mejor peor regular serio seria tranquila tranquilo pesada pesado cansado confundido confundida perdido perdida solo sola juntos juntas todos todas alguien nadie siempre nunca a veces quizás quizas tal vez ahora luego después despues antes mañana ayer hoy tarde noche mañana temprano regreso volver reiniciar oportunidad cambio aprender crecer reparar reparar daño herida herido herida memoria recuerdo recuerdas recordé recorde contarme contexto historia fondo detalle detalles prueba pruebas pantalla captura compartir publicar borrar eliminar pedir callar denunciar ayudar intervenir proteger apoyar confiar creer te creo te apoyo te acompaño te acompaño vale bueno mala malo pésimo excelente normal neutral duda dudas pregunta contexto contexto escolar convivencia ley 1620 sopo sopó colombia convivencia escolar ruta de atencion atención escucha cariño afecto confianza secreto meme machete carajo mierda joder jodido jodida marica mk gonorrea puta pendejo pendeja estúpido estupida idiota tonto tonta absurdo absurda canson cansona fastidio vergüenza verguenza vergonzoso vergonzosa respeto dignidad cuidado reparación reparacion reconciliacion reconciliación sanción severa acompañamiento reflexión reflexion reinicio reiniciar alternativa decisión decisiones ambiguo ambigua correcto correcta incorrecto incorrecta escoger elegir posibilidad opciones responder contexto emocional aburrido aburrida pasar el rato charlar conversar conversación conversar rato música cancion canción undertale tema final bueno final malo final secreto castigo demanda reflexión'.split(' ')
+)));
+
+const NPC_PERSONAS = {
+  grupo: { speaker: ['Santi','Mafe','Valeria'], cls: ['in g0','in g1','in g2'], tone: 'volatile' },
+  camila: { speaker: ['Camila M.'], cls: ['in camila-sender'], tone: 'hurt' },
+  profe_jairo: { speaker: ['Profe Jairo'], cls: ['in g0'], tone: 'adult' },
+  coordinadora: { speaker: ['Coord. Patricia'], cls: ['in g0'], tone: 'formal' },
+  mateo: { speaker: ['Mateo Rincón'], cls: ['in g3'], tone: 'friendly' },
+  dani: { speaker: ['Dani García'], cls: ['in g1'], tone: 'friendly' },
+  mama: { speaker: ['Mamá'], cls: ['in g2'], tone: 'warm' },
+  papa: { speaker: ['Papá'], cls: ['in g0'], tone: 'firm' },
+  hermano: { speaker: ['Hermano'], cls: ['in g3'], tone: 'casual' },
+  bro: { speaker: ['Bro'], cls: ['in g0'], tone: 'casual' },
+  machete: { speaker: ['Machete'], cls: ['in g1'], tone: 'meme' }
+};
+
+function pick(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function normalizeText(text) {
+  return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function getConversationMemory(chatId) {
+  if(!conversationState[chatId]) {
+    conversationState[chatId] = { topics: [], userFacts: [], rapport: 0, lastEmotion: 'neutral', lastMessages: [] };
+  }
+  return conversationState[chatId];
+}
+
+function rememberConversation(chatId, rawText) {
+  const memory = getConversationMemory(chatId);
+  const lower = normalizeText(rawText);
+  const topics = [
+    ['camila',['camila','companera','compañera']],
+    ['acoso',['acoso','ciberbullying','cyberbullying','matoneo','burla','humillar','foto']],
+    ['familia',['mama','mamá','papa','papá','familia','hermano','hermana']],
+    ['apoyo',['apoyo','ayuda','acompanar','acompañar','proteger','cuidar','amor']],
+    ['verdad',['verdad','honesto','honesta','confesar','contar']],
+    ['castigo',['castigo','sancion','sanción','demanda','justicia','injusticia']],
+    ['colegio',['colegio','clase','profe','coordinadora','salon','salón']],
+    ['emocion',['mal','bien','triste','rabia','miedo','ansiedad','raro']]
+  ];
+  topics.forEach(([topic, kws]) => {
+    if(kws.some(kw => lower.includes(kw)) && !memory.topics.includes(topic)) memory.topics.push(topic);
+  });
+  if(lower.includes('amor')) memory.userFacts.push('mencionó la palabra amor');
+  if(lower.includes('chavales')) memory.userFacts.push('habla con tono de chavales');
+  if(['mierda','joder','gonorrea','puta','marica','mk'].some(kw => lower.includes(kw))) memory.lastEmotion = 'heated';
+  else if(['lo siento','perdon','perdón','gracias','te apoyo','te creo'].some(kw => lower.includes(kw))) memory.lastEmotion = 'soft';
+  else if(['miedo','triste','mal','solo','sola'].some(kw => lower.includes(kw))) memory.lastEmotion = 'vulnerable';
+  else memory.lastEmotion = 'neutral';
+  memory.lastMessages.push(rawText);
+  memory.lastMessages = memory.lastMessages.slice(-4);
+}
+
+function getMatchedKeywordResponse(chatId, lower) {
+  const responses = CHAT_RESPONSES[chatId];
+  if(!responses) return null;
+  for(const [kw, msgs] of Object.entries(responses)) {
+    if(lower === normalizeText(kw) || lower.includes(normalizeText(kw))) return msgs;
+  }
+  return null;
+}
+
+function buildNpcMessages(chatId, text) {
+  const key = getConversationKey(chatId);
+  const persona = NPC_PERSONAS[key] || NPC_PERSONAS.bro;
+  const memory = getConversationMemory(key);
+  const lower = normalizeText(text);
+  rememberConversation(key, text);
+
+  const topicHint = memory.topics.length ? ` Seguimos girando alrededor de ${memory.topics[memory.topics.length - 1]}.` : '';
+  const memoryHint = memory.userFacts.length ? ` Me acuerdo de que ${memory.userFacts[memory.userFacts.length - 1]}.` : '';
+
+  if(['mierda','joder','gonorrea','puta','marica','mk'].some(kw => lower.includes(kw))) {
+    return [{ s: pick(persona.speaker), t: persona.tone === 'formal' || persona.tone === 'adult' ? 'Entiendo que estés alterado, pero necesito que hables con claridad.' : 'Te noto muy cargado. Respira y dime qué pasó de verdad.', cls: pick(persona.cls), time:'' }];
+  }
+  if(lower.includes('amor')) {
+    return [{ s: pick(persona.speaker), t: persona.tone === 'hurt' ? 'Ojalá en este curso hubiera más amor y menos ganas de humillar.' : 'Hablar con amor en medio de este caos ya dice bastante de ti.', cls: pick(persona.cls), time:'' }];
+  }
+  if(lower.includes('chavales')) {
+    return [{ s: pick(persona.speaker), t: persona.tone === 'meme' ? 'Chavales, mamá, papá, machete. Confirmado.' : 'Te salió lo de chavales, pero esto va en serio. ¿Qué piensas hacer?', cls: pick(persona.cls), time:'' }];
+  }
+  if(lower.includes('camila') && key !== 'camila') {
+    return [{ s: pick(persona.speaker), t: persona.tone === 'volatile' ? 'Todos hablan de Camila, pero pocos quieren hacerse cargo.' : `Camila sigue siendo el centro de todo esto.${topicHint}`, cls: pick(persona.cls), time:'' }];
+  }
+  if(['coordinacion','coordinadora','ley 1620','denuncia','demanda'].some(kw => lower.includes(kw))) {
+    return [{ s: pick(persona.speaker), t: persona.tone === 'formal' ? 'Si decides hablar ahora, cada detalle cuenta y quedará registrado.' : 'Ya estás pensando en consecuencias reales. Eso cambia la historia.', cls: pick(persona.cls), time:'' }];
+  }
+  if(['lo siento','perdon','perdón','disculpa','te apoyo','te creo'].some(kw => lower.includes(kw))) {
+    return [{ s: pick(persona.speaker), t: persona.tone === 'hurt' ? 'Gracias por decirlo. Necesito hechos, pero escuchar eso importa.' : `Eso suena más humano.${memoryHint}`, cls: pick(persona.cls), time:'' }];
+  }
+  if(['miedo','triste','mal','solo','sola','ansiedad'].some(kw => lower.includes(kw))) {
+    return [{ s: pick(persona.speaker), t: persona.tone === 'warm' ? 'Si te sientes así, no cargues esto solo. Escríbeme todo lo que necesites.' : 'No estás escribiendo por escribir. Se nota que esto te está pegando.', cls: pick(persona.cls), time:'' }];
+  }
+  if(['aburrido','rato','hablar','charlar','contexto','detalle','historia'].some(kw => lower.includes(kw))) {
+    return [
+      { s: pick(persona.speaker), t: persona.tone === 'hurt' ? 'Antes de hoy yo casi no hablaba con nadie del salón. Me gustaba pasar desapercibida.' : 'Si quieres contexto, te lo doy: esto venía escalando desde bromas pequeñas que nadie frenó.', cls: pick(persona.cls), time:'' },
+      { s: pick(persona.speaker), t: 'Y sí, me acuerdo de lo que me dijiste hace un momento.' + topicHint, cls: pick(persona.cls), time:'' }
+    ];
+  }
+  return [{ s: pick(persona.speaker), t: pick([
+    'Te leo. Si quieres, sigue yendo al detalle.',
+    'No se me olvida lo anterior. Esto se conecta con lo que ya veníamos hablando.',
+    'Puedes contarme más contexto o cambiar de tema un rato, igual te sigo.',
+    'Lo estoy guardando. Cada mensaje tuyo cambia cómo te respondo.',
+    'No necesito internet para entender por dónde va esta conversación.'
+  ]) + topicHint, cls: pick(persona.cls), time:'' }];
+}
+
+function sendUserMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if(!text || !currentChat) return;
+  input.value = '';
+
+  const body = document.getElementById('chat-body');
+  const now = new Date();
+  const t = now.getHours()+':'+(now.getMinutes()<10?'0':'')+now.getMinutes();
+  appendBubble(body, {s:'Tú',t:text,cls:'out',time:t,userTyped:true});
+
+  const key = getConversationKey(currentChat);
+  const lower = normalizeText(text);
+  const karmaWords = {
+    'perdon': 1, 'lo siento': 1, 'disculpa': 1, 'te apoyo': 1, 'te creo': 1, 'coordinacion': 1,
+    'jaja': -1, 'gracioso': -1, 'compartir': -1, 'mandar': -1, 'foto': -1, 'humillar': -1
+  };
+  for(const [kw, delta] of Object.entries(karmaWords)) {
+    if(lower.includes(kw)) { adjustKarma(delta); break; }
+  }
+
+  const matched = getMatchedKeywordResponse(key, lower);
+  const replyBatch = matched || buildNpcMessages(currentChat, text);
+  showTyping(body, ()=>{
+    replyBatch.forEach(m => {
+      const now2 = new Date();
+      const t2 = now2.getHours()+':'+(now2.getMinutes()<10?'0':'')+now2.getMinutes();
+      appendBubble(body, {...m, time:t2});
+    });
+  }, 700 + Math.random()*500);
+
+  setTimeout(()=>{
+    if(['perdon','lo siento','te apoyo','te creo','verdad','ayuda'].some(w=>lower.includes(w))) {
+      showNarrator(pick(GENERIC_GOOD),'bottom',3200);
+    } else if(['jaja','foto','mandar','compartir','culpa de ella','dramatic'].some(w=>lower.includes(w))) {
+      showNarrator(pick(GENERIC_BAD),'bottom',3200);
+    } else {
+      showNarrator(pick(GENERIC_NEUTRAL),'bottom',2800);
+    }
+  }, 900);
+}
+
+// ─── OPTIONS ───
+function showOptions(chatId, options) {
+  const area = document.getElementById('options-area');
+  area.innerHTML = '<p class="options-label">Tu respuesta</p>';
+  area.style.display='flex';
+  area.style.flexDirection='column';
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = `opt-btn ${opt.type||'neutral'}`;
+    btn.textContent = opt.label;
+    btn.onclick = () => selectOption(chatId, opt);
+    area.appendChild(btn);
+  });
+}
+
+function applyEndingEffects(chatId, opt) {
+  if(chatId === 'camila') {
+    if(opt.karma > 0) endingFlags.supportCamila += 2;
+    if(opt.karma < 0) endingFlags.supportBullies += 1;
+  }
+  if(chatId === 'grupo') {
+    if(opt.karma > 0) endingFlags.supportCamila += 1;
+    if(opt.karma < 0) endingFlags.supportBullies += 2;
+  }
+  if(chatId === 'coordinadora' || chatId === 'profe_jairo') {
+    if(opt.karma > 0) endingFlags.truthAdults += 1;
+    if(opt.karma < 0) endingFlags.liedAdults += 1;
+  }
+  if(chatId === 'coordinadora' && opt.karma >= 4) endingFlags.severePunishmentRoute = true;
+  if(endingFlags.supportBullies >= 4 && endingFlags.liedAdults >= 1) endingFlags.lawsuitRoute = true;
+}
+
+function selectOption(chatId, opt) {
+  hasActed = true;
+  document.getElementById('options-area').style.display='none';
+  document.getElementById('options-area').innerHTML='';
+
+  if(opt.special === 'leave_mid') {
+    tryLeaveGroup();
+    return;
+  }
+
+  adjustKarma(opt.karma);
+  applyEndingEffects(chatId, opt);
+  const body = document.getElementById('chat-body');
+
+  if(opt.msg) {
+    const now = new Date();
+    const t = now.getHours()+':'+(now.getMinutes()<10?'0':'')+now.getMinutes();
+    appendBubble(body, {s:'Tú',t:opt.msg,cls:'out',time:t});
+  }
+
+  const good = opt.karma > 0;
+  let mindTitle, mindText, tips, isAlert;
+
+  if(good) {
+    mindTitle = 'Un respiro de alivio';
+    mindText = getMindTextGood(chatId, opt);
+    tips = getMindTipsGood(chatId);
+    isAlert = false;
+  } else if(opt.karma < 0) {
+    mindTitle = 'Siente el peso de eso';
+    mindText = getMindTextBad(chatId, opt);
+    tips = getMindTipsBad(chatId);
+    isAlert = Math.abs(opt.karma) >= 2;
+  } else {
+    mindTitle = 'El silencio también habla';
+    mindText = 'Tu indiferencia no te hace inocente. Las personas que no actúan le dan fuerza al acoso.';
+    tips = ['El testigo silencioso es cómplice pasivo.', 'No hacer nada también es una decisión.', 'Camila ve quiénes están en ese grupo.'];
+    isAlert = false;
+  }
+
+  playTone('breathe');
+
+  showMindfulness({good, title:mindTitle, text:mindText, tips, alert:isAlert}, ()=>{
+    if(opt.response && opt.response.length>0) {
+      showTypingThen(body, opt.response, ()=>{
+        afterOption(chatId);
+      });
+    } else {
+      afterOption(chatId);
+    }
+  });
+}
+
+function afterOption(chatId) {
+  const chat = CHATS[chatId];
+  if(!chat._stageOptionChosen) chat._stageOptionChosen = 0;
+  stageIndices[chatId] = (stageIndices[chatId]||0)+1;
+  chat._stageOptionChosen = stageIndices[chatId];
+  checkUnlocks();
+
+  const idx = stageIndices[chatId];
+
+  // Camila leaves group at stage 2 (bad path) or stage 3
+  if(chatId === 'grupo' && idx >= 2 && !camilaLeftGroup && karma < 0) {
+    triggerCamilaLeave();
+    return;
+  }
+
+  // Professor sends random notification if in a different chat
+  if(chatId !== 'profe_jairo' && !CHATS['profe_jairo'].locked && Math.random() > 0.5) {
+    const profeMsgs = [
+      'Recuerden traer el permiso del paseo mañana.',
+      'Mañana la evaluación se pospone al viernes.',
+      '¿Alguien sabe cómo está Camila? No ha venido.',
+    ];
+    const msg = profeMsgs[Math.floor(Math.random()*profeMsgs.length)];
+    setTimeout(()=>{
+      if(currentChat !== 'profe_jairo') showIncomingNotif('profe_jairo', 'Profe Jairo: '+msg, 5000);
+      CHATS['profe_jairo'].badge++;
+      renderChatList();
+    }, 3000 + Math.random()*4000);
+  }
+
+  if(idx < chat.stages.length) {
+    setTimeout(()=>{
+      // Only render stage if still in same chat
+      if(currentChat === chatId) renderStage(chatId);
+    }, 800);
+  } else {
+    checkEnding();
+  }
+}
+
+// ─── CAMILA LEAVES GROUP ───
+function triggerCamilaLeave() {
+  if(camilaLeftGroup) return;
+  camilaLeftGroup = true;
+
+  setTimeout(()=>{
+    // Show notification
+    if(currentChat !== 'grupo') {
+      showIncomingNotif('grupo', '⚠️ Camila M. salió del grupo', 6000);
+    } else {
+      const body = document.getElementById('chat-body');
+      appendBubble(body, { s:'Sistema', t:'Camila M. salió del grupo', cls:'system', danger:true });
+      appendBubble(body, { s:'Santi', t:'uy… creo que ya fue demasiado 😬', cls:'in g0', time:'' });
+      appendBubble(body, { s:'Valeria', t:'no era para tanto parceros… de verdad', cls:'in g2', time:'' });
+    }
+
+    // Narrator comment
+    showNarrator('Camila no aguantó más. A veces el silencio duele más que las palabras.', 'bottom', 6000);
+
+    // Continue story after brief pause
+    setTimeout(()=>{
+      stageIndices['grupo'] = (stageIndices['grupo']||0)+1;
+      checkUnlocks();
+      const idx = stageIndices['grupo'];
+      if(idx < CHATS['grupo'].stages.length) {
+        setTimeout(()=>{ if(currentChat==='grupo') renderStage('grupo'); }, 1200);
+      } else {
+        checkEnding();
+      }
+    }, 2000);
+  }, 1500);
+}
+
+function getMindTipsGood(chatId) {
+  const all = [
+    'Hablar con honestidad es la base de la convivencia.',
+    'Cada persona que actúa con empatía inspira a las demás.',
+    'El valor de una acción no depende de cuántos te aplaudan.',
+    'En Sopó y en todo Colombia, la Ley 1620 protege a las víctimas.',
+    'Un grupo sano es aquel donde la presión no silencia a nadie.',
+    'Reconocer el error es el primer paso para crecer.',
+    'Eres parte de este parche. Lo que tú hagas importa.',
+  ];
+  return all.sort(()=>0.5-Math.random()).slice(0,3);
+}
+
+function getMindTipsBad(chatId) {
+  const all = [
+    '¿Esto es lo que querrías que le hicieran a alguien que quieres?',
+    'El ciberbullying no desaparece cuando cierras la app.',
+    'Camila es una persona real con familia, sueños y dolor.',
+    'La risa colectiva ante el sufrimiento ajeno no es gracia, es crueldad.',
+    'En Colombia, el matoneo digital tiene consecuencias legales reales.',
+    'Piensa: ¿cuándo fue la última vez que alguien te hizo sentir así?',
+    'El silencio cómplice alimenta el acoso tanto como la participación activa.',
+  ];
+  return all.sort(()=>0.5-Math.random()).slice(0,3);
+}
+
+function getMindTextGood(chatId, opt) {
+  const map = {
+    'grupo':'Tu mensaje cortó la cadena. En Sopó, en cada colegio, hay alguien que puede marcar la diferencia. Hoy eres tú.',
+    'camila':'Camila leyó tu mensaje tres veces. Cada palabra importa cuando alguien se siente invisible.',
+    'coordinadora':'La verdad, aunque da miedo, protege. Camila merece que alguien hable por ella.',
+    'profe_jairo':'El profe Jairo respira. Hay un estudiante que entiende que el silencio también es complicidad.'
+  };
+  return map[chatId] || 'Tu acción tiene peso. Seguir adelante con empatía cambia el resultado de esta historia.';
+}
+
+function getMindTextBad(chatId, opt) {
+  const map = {
+    'grupo':'Camila acaba de ver que nadie dijo nada. Está sola en el baño del colegio. Un emoji, un silencio. Todo duele igual.',
+    'camila':'Tu respuesta le confirma a Camila algo que ya temía: que nadie va a hacer nada. Eso duele más que la foto.',
+    'coordinadora':'Mentirle a coordinación puede protegerte hoy. Pero Camila sigue sin protección.',
+    'profe_jairo':'El profe Jairo lo sabe. Y ahora también sabe que no puede contar contigo.'
+  };
+  return map[chatId] || 'Cada acción que tomamos deja una huella. Esta es tuya.';
+}
+
+function showTypingThen(body, bubbles, cb) {
+  let i=0;
+  function next() {
+    if(i>=bubbles.length){cb();return;}
+    const b=bubbles[i];i++;
+    showTyping(body,()=>{
+      appendBubble(body,b);
+      setTimeout(next,400);
+    }, 800 + Math.random()*800);
+  }
+  next();
+}
+
+// ─── CHAT HISTORY PERSISTENCE ───
+// Store rendered bubbles per chat so history is preserved
+const chatHistories = {}; // chatId -> array of bubble data
+
+function saveBubbleToHistory(chatId, msg) {
+  if(!chatHistories[chatId]) chatHistories[chatId] = [];
+  chatHistories[chatId].push(msg);
+}
+
+function restoreHistory(chatId, body) {
+  if(!chatHistories[chatId]) return;
+  chatHistories[chatId].forEach(msg => {
+    appendBubbleSilent(body, msg);
+  });
+}
+
+// appendBubble without sound (for history restore)
+function appendBubbleSilent(body, msg) {
+  const div = document.createElement('div');
+  if(msg.cls === 'system') {
+    div.className = msg.danger ? 'bubble system danger-sys' : 'bubble system';
+    div.innerHTML=`<span>${msg.t}</span>`;
+  } else {
+    const isOut = msg.cls && msg.cls.includes('out');
+    const isUserTyped = msg.userTyped;
+    div.className=`bubble ${isOut?'out':'in '+(msg.cls.includes('camila-sender')?'camila-sender':'group-sender-'+parseInt((msg.cls.match(/g(\d)/)||[,'0'])[1]))}${isUserTyped?' user-typed':''}`;
+    let inner = '';
+    if(!isOut && msg.s) inner += `<div class="bubble-sender">${msg.s}</div>`;
+    inner += `<span>${msg.t}</span>`;
+    inner += `<span class="bubble-time">${msg.time||''}${isOut?'<span class="bubble-check"> ✓✓</span>':''}</span>`;
+    div.innerHTML = inner;
+  }
+  const ind = body.querySelector('#typing-indicator') || body.querySelector('.typing-bubble');
+  if(ind) body.insertBefore(div, ind); else body.appendChild(div);
+  body.scrollTop = body.scrollHeight;
+}
+function checkUnlocks() {
+  // Camila and Profe are unlocked from start — only unlock coordinadora
+  if((stageIndices['grupo']||0)>=2) {
+    CHATS['coordinadora'].locked=false;
+    CHATS['coordinadora']._appeared=true;
+    if(CHATS['coordinadora'].badge===0) CHATS['coordinadora'].badge=1;
+    if(currentChat !== 'coordinadora' && !CHATS['coordinadora']._notified) {
+      CHATS['coordinadora']._notified = true;
+      setTimeout(()=>{ showIncomingNotif('coordinadora','Coord. Patricia: Buenos días. Necesito hablar contigo.',5000); },2000);
+    }
+  }
+  renderChatList();
+}
+
+// ─── MINDFULNESS ───
+function showMindfulness({good, title, text, btn, tips, alert}, callback) {
+  mindCallback = callback;
+  const ov = document.getElementById('overlay-mind');
+  const ring = document.getElementById('breathe-ring');
+  document.getElementById('mind-title').textContent=title;
+  document.getElementById('mind-text').textContent=text;
+  document.getElementById('mind-btn').textContent=btn||'CONTINUAR';
+  ring.className='breathe-ring'+(good?' good':'');
+
+  // Tips list
+  const tipsList = document.getElementById('mind-tips');
+  if(tips && tips.length > 0) {
+    tipsList.innerHTML='';
+    tips.forEach((tip,i)=>{
+      const li = document.createElement('li');
+      li.textContent=tip;
+      li.style.animationDelay = (i*0.2)+'s';
+      tipsList.appendChild(li);
+    });
+    tipsList.style.display='block';
+  } else {
+    tipsList.style.display='none';
+  }
+
+  if(alert) {
+    ov.classList.add('alert-mode');
+    playTone('alert');
+  } else {
+    ov.classList.remove('alert-mode');
+  }
+
+  ov.classList.add('active');
+}
+
+function mindContinue() {
+  document.getElementById('overlay-mind').classList.remove('active');
+  document.getElementById('overlay-mind').classList.remove('alert-mode');
+  if(mindCallback){ const cb=mindCallback; mindCallback=null; setTimeout(cb,300); }
+}
+
+// ─── ENDING ───
+function injectBadEndingMessages(type) {
+  if(CHATS.grupo._badEndingInjected) return;
+  CHATS.grupo._badEndingInjected = true;
+  const extra = [
+    { s:'Santi', t:'al final todos quedaron mirando fue a ti jajaja, qué mala vuelta', cls:'in g0', time:'15:10' },
+    { s:'Mafe', t:'y Camila sigue sin aparecer… esto ya se puso re turbio', cls:'in g1', time:'15:10' },
+    { s:'Valeria', t:'no me da risa. se nos fue de las manos.', cls:'in g2', time:'15:11' }
+  ];
+  if(!chatHistories['grupo']) chatHistories['grupo'] = [];
+  extra.forEach(msg => chatHistories['grupo'].push(msg));
+  CHATS.grupo.badge += 3;
+}
+
+function checkEnding() {
+  const groupDone = (stageIndices['grupo']||0) >= CHATS['grupo'].stages.length;
+  const camilaDone = (stageIndices['camila']||0) >= 1;
+  const adultDone = (stageIndices['coordinadora']||0) >= 1 || (stageIndices['profe_jairo']||0) >= 1;
+  const enoughStoryProgress = groupDone && hasActed && (camilaDone || adultDone);
+  const totalStages = Object.values(CHATS).reduce((acc,c)=>acc+c.stages.length,0);
+  const doneStages = Object.entries(stageIndices).reduce((acc,[id,idx]) => acc + Math.min(idx, CHATS[id].stages.length), 0);
+  if(!enoughStoryProgress && doneStages < totalStages) return;
+
+  let ending = 'neutral';
+  if(endingFlags.supportCamila >= 5 && endingFlags.truthAdults >= 2 && endingFlags.severePunishmentRoute) {
+    ending = 'punished_bullies';
+  } else if(endingFlags.lawsuitRoute || (endingFlags.supportBullies >= 5 && endingFlags.liedAdults >= 1)) {
+    ending = 'lawsuit';
+  } else if(karma >= 10) ending='hero';
+  else if(karma >= 5) ending='good';
+  else if(karma >= 0) ending='neutral';
+  else if(karma >= -5) ending='bad';
+  else ending='worst';
+
+  if(['bad','worst','lawsuit'].includes(ending)) {
+    injectBadEndingMessages(ending);
+    startHeartbeat();
+    startStatic(0.08);
+    showNarrator('Todo salió mal. El celular sigue en tus manos. Aún puedes buscar qué hacer con este daño.', 'top', 5000);
+    badEndingPending = ending;
+    setTimeout(()=>{
+      stopHeartbeat();
+      stopStatic();
+      showScreen('home');
+      navHome();
+    }, 1800);
+    return;
+  }
+
+  if(karma <= -4) {
+    startHeartbeat();
+    startStatic(0.1);
+    showNarrator('Todo sale a la luz. ¿Estás listo para las consecuencias?', 'top', 4000);
+    setTimeout(()=>{
+      stopHeartbeat();
+      stopStatic();
+      triggerPhoneOff(()=>{ showFinal(ending); });
+    }, 3000);
+  } else {
+    showFinal(ending);
+  }
+}
+
+function showFinal(type) {
+  stopHeartbeat(); stopStatic();
+  const fin = document.getElementById('screen-final');
+  const emoji = document.getElementById('final-emoji');
+  const title = document.getElementById('final-title');
+  const text = document.getElementById('final-text');
+  const post = document.getElementById('final-postcredit');
+
+  const endings = {
+    hero: {
+      emoji:'🌟',
+      title:'Héroe del Parche',
+      text:'Elegiste la empatía en cada momento. Camila volvió al colegio. Los que se burlaron pidieron disculpas en el grupo, frente a todos. En Sopó, ese día, algo cambió para siempre.',
+      post:'[Escena post-créditos] Camila llega el lunes al colegio. Encuentra una nota en su casillero: "Te debo una disculpa. Fue un error". Firmado: El Parche 10B. Hay esperanza.'
+    },
+    good:{emoji:'💚',title:'Un Paso en la Dirección Correcta',text:'Hiciste lo correcto la mayoría del tiempo. Camila fue apoyada, el problema llegó a coordinación. Los responsables tuvieron consecuencias. No fue perfecto, pero sí fue honesto.',post:''},
+    punished_bullies:{emoji:'⚖️',title:'La Ayudaste, Pero Hubo Sanción Severa',text:'Apoyaste a Camila y sostuviste la verdad hasta el final. El colegio castigó con dureza a los matones: suspensión, comité de convivencia y citación formal a sus familias. El daño no desaparece, pero por primera vez alguien puso un límite claro.',post:'Camila no sonríe de inmediato. Aun así, sabe que esta vez el sistema sí la escuchó.'},
+    neutral:{emoji:'🌫️',title:'El Testigo Silencioso',text:'Ni empujaste ni detuviste. Camila está bien, pero el problema no se resolvió del todo. El silencio, aunque cómodo, nunca es inocente. Mañana podría pasarle a alguien más.',post:''},
+    bad:{emoji:'🌑',title:'Consecuencias Reales',text:'Todo salió mal. Camila está sufriendo sola, el grupo se lava las manos y algunos compañeros ya empezaron a burlarse de ti por intentar acomodarte tarde. El daño sigue vivo.',post:'Todavía tienes el celular. Si buscas sobre cyberbullying en el navegador, podrás enfrentarte a la reflexión final y decidir si reinicias para hacerlo mejor.'},
+    worst:{emoji:'⛔',title:'Sin Retorno',text:'Participaste activamente en el acoso. Camila se aisló, los demás te usan como chivo expiatorio y el caso escala con consecuencias reales. En Colombia, el ciberbullying deja rastro.',post:'Aún puedes abrir el navegador del celular. Si buscas cyberbullying, el juego te mostrará la reflexión final y la oportunidad de reiniciar.'},
+    lawsuit:{emoji:'📄',title:'La Demanda de Camila',text:'Elegiste proteger a los matones y minimizar lo ocurrido. Camila, al ver la injusticia, decidió demandarte también a ti como parte del daño y del encubrimiento. Ya no es solo un chat: ahora hay consecuencias personales, familiares y legales.',post:'Sigue usando el celular. Busca cyberbullying en el navegador para ver la reflexión final y decidir si reinicias.'},
+    secret:{emoji:'👻',title:'El Cómplice Invisible',text:'Te metiste, viste lo que pasaba, y te fuiste cuando las cosas se pusieron serias. Legalmente, participar y huir no te libera. La investigación llegó igual a ti.',post:''},
+    secret_clean:{emoji:'🚪',title:'La Puerta de Salida',text:'Te saliste antes de que nada pasara. Nadie supo que estabas. Pero Camila tampoco tuvo a nadie. Nada se resolvió. ¿Es eso quedarte limpio?',post:''},
+    reflection:{emoji:'🕯️',title:'Reflexión Final',text:'El cyberbullying no termina al cerrar una app. Se queda en el cuerpo, en la memoria y en la vida real. Si llegaste hasta aquí por el final malo, todavía puedes volver a empezar y decidir distinto: intervenir, decir la verdad, apoyar a la víctima y cortar la cadena antes de que alguien cargue con esto a solas.',post:'Reiniciar no borra lo que viste, pero sí puede cambiar lo que eliges después.'}
+  };
+
+  const e = endings[type] || endings['neutral'];
+  emoji.textContent=e.emoji;
+  title.textContent=e.title;
+  text.textContent=e.text;
+  if(e.post){ post.textContent=e.post; post.style.display='block'; } else { post.style.display='none'; }
+  badEndingPending = null;
+  finalReflectionShown = type === 'reflection';
+  fin.classList.add('active');
+}
+
+// ─── SCROLL INDICATOR ───
+function updateScrollIndicator() {
+  const body = document.getElementById('chat-body');
+  const ind = document.getElementById('scroll-indicator');
+  const thumb = document.getElementById('scroll-thumb');
+  if(!body || !ind || !thumb) return;
+  const { scrollTop, scrollHeight, clientHeight } = body;
+  if(scrollHeight <= clientHeight) { ind.style.opacity='0'; return; }
+  ind.style.opacity='1';
+  const thumbPct = (clientHeight/scrollHeight)*100;
+  const posPct = (scrollTop/(scrollHeight-clientHeight))*(100-thumbPct);
+  thumb.style.height = thumbPct+'%';
+  thumb.style.top = posPct+'%';
+}
+
+// ─── PHONE NAV BAR ───
+function navBack() {
+  const cur = getCurrentScreenName();
+  if(cur==='chat') { goBack(); return; }
+  if(cur==='chatlist') { showScreen('home'); return; }
+  if(cur==='music' || cur==='web' || cur==='camera') { showScreen('home'); return; }
+}
+function navHome() {
+  currentChat = null;
+  showScreen('home');
+}
+function navRecents() {
+  // Show a simple recent apps hint via narrator
+  showNarrator('Aplicaciones recientes: WhatsApp, Cámara, Música', 'bottom', 2500);
+}
+function getCurrentScreenName() {
+  if(document.getElementById('screen-chat').style.display!=='none') return 'chat';
+  if(document.getElementById('screen-chatlist').style.display!=='none') return 'chatlist';
+  if(document.getElementById('screen-music').style.display!=='none') return 'music';
+  if(document.getElementById('screen-web').style.display!=='none') return 'web';
+  if(document.getElementById('screen-camera').style.display!=='none') return 'camera';
+  return 'home';
+}
+function closeApp(name) {
+  prevScreen = null;
+  showScreen('home');
+}
+
+// ─── MUSIC APP ───
+const TRACKS = [
+  {
+    name: 'Fallen Down',
+    artist: '8-bit reinterpretación libre',
+    duration: '3:12',
+    notes: [
+      [392,0.35],[440,0.35],[523,0.45],[587,0.35],[523,0.25],[440,0.35],[392,0.45],
+      [349,0.35],[392,0.35],[440,0.4],[523,0.3],[494,0.3],[440,0.35],[392,0.55],
+      [330,0.3],[349,0.3],[392,0.4],[440,0.4],[392,0.25],[349,0.25],[330,0.55],
+      [392,0.35],[440,0.35],[523,0.45],[659,0.4],[587,0.3],[523,0.35],[440,0.55]
+    ]
+  },
+  {
+    name: 'Megalovania',
+    artist: '8-bit reinterpretación libre',
+    duration: '3:28',
+    notes: [
+      [294,0.18],[294,0.18],[587,0.18],[440,0.18],[415,0.18],[392,0.18],[349,0.18],[294,0.18],
+      [349,0.18],[392,0.18],[262,0.18],[262,0.18],[587,0.18],[440,0.18],[415,0.18],[392,0.18],
+      [349,0.18],[294,0.18],[349,0.18],[392,0.18],[247,0.18],[247,0.18],[587,0.18],[440,0.18],
+      [415,0.18],[392,0.18],[349,0.18],[294,0.18],[349,0.18],[392,0.18],[233,0.2],[233,0.4]
+    ]
+  },
+  {
+    name: 'An Ending',
+    artist: '8-bit reinterpretación libre',
+    duration: '2:58',
+    notes: [
+      [262,0.5],[330,0.45],[392,0.5],[523,0.55],[494,0.45],[440,0.45],[392,0.65],
+      [247,0.5],[311,0.45],[370,0.5],[494,0.55],[466,0.45],[415,0.45],[370,0.65],
+      [220,0.45],[262,0.45],[330,0.5],[392,0.5],[440,0.5],[392,0.45],[330,0.7]
+    ]
+  },
+  {
+    name: 'His Theme',
+    artist: '8-bit reinterpretación libre',
+    duration: '3:06',
+    notes: [
+      [330,0.35],[392,0.35],[440,0.45],[392,0.25],[330,0.35],[294,0.45],[262,0.55],
+      [294,0.35],[330,0.35],[392,0.45],[523,0.35],[494,0.3],[440,0.35],[392,0.55],
+      [330,0.3],[392,0.35],[523,0.45],[587,0.35],[523,0.3],[440,0.35],[392,0.6],
+      [349,0.35],[440,0.35],[494,0.45],[440,0.25],[392,0.35],[330,0.6]
+    ]
+  },
+  {
+    name: 'Lago de los Cisnes',
+    artist: '8-bit clásicos',
+    duration: '2:48',
+    notes: [
+      [659,0.3],[587,0.15],[622,0.15],[659,0.3],[587,0.3],[494,0.3],[523,0.15],[587,0.15],
+      [659,0.6],[659,0.3],[587,0.15],[622,0.15],[659,0.3],[587,0.3],[494,0.3],[523,0.2],
+      [587,0.2],[659,0.4],[698,0.25],[659,0.25],[587,0.5],[523,0.5]
+    ]
+  },
+  {
+    name: 'Oda a la Alegría',
+    artist: '8-bit clásicos',
+    duration: '2:32',
+    notes: [
+      [330,0.25],[330,0.25],[349,0.25],[392,0.25],[392,0.25],[349,0.25],[330,0.25],[294,0.25],
+      [262,0.25],[262,0.25],[294,0.25],[330,0.25],[330,0.375],[294,0.125],[294,0.5],
+      [330,0.25],[330,0.25],[349,0.25],[392,0.25],[392,0.25],[349,0.25],[330,0.25],[294,0.25]
+    ]
+  }
+];
+
+let currentTrack = 0;
+let musicPlaying = false;
+let musicProgressInterval = null;
+let musicProgressPct = 0;
+let musicOscNodes = [];
+let musicNoteTimeout = null;
+let musicDistortLevel = 0; // 0=normal, goes up with bad karma
+
+function openMusic() {
+  prevScreen = getCurrentScreenName();
+  showScreen('music');
+  renderPlaylist();
+  updateMusicUI();
+}
+
+function renderPlaylist() {
+  const pl = document.getElementById('music-playlist');
+  pl.innerHTML = '';
+  TRACKS.forEach((tr, i) => {
+    const item = document.createElement('div');
+    item.className = 'music-track-item' + (i===currentTrack?' active':'');
+    item.innerHTML = `
+      <div class="music-track-num">${i===currentTrack&&musicPlaying?'♫':(i+1)}</div>
+      <div class="music-track-info">
+        <div class="music-track-item-name">${tr.name}</div>
+        <div style="font-size:0.65rem;color:var(--sub);">${tr.artist}</div>
+      </div>
+      <div class="music-track-item-dur">${tr.duration}</div>
+    `;
+    item.onclick = () => { currentTrack=i; if(musicPlaying) stopMusicPlayback(); startMusicPlayback(); renderPlaylist(); updateMusicUI(); };
+    pl.appendChild(item);
+  });
+}
+
+function updateMusicUI() {
+  const tr = TRACKS[currentTrack];
+  document.getElementById('music-track-name').textContent = tr.name;
+  document.getElementById('music-track-artist').textContent = tr.artist;
+  document.getElementById('music-play-btn').textContent = musicPlaying ? '⏸' : '▶';
+  const vinyl = document.getElementById('music-vinyl');
+  vinyl.classList.toggle('spinning', musicPlaying);
+}
+
+function toggleMusicPlay() {
+  if(musicPlaying) { stopMusicPlayback(); } else { startMusicPlayback(); }
+  updateMusicUI(); renderPlaylist();
+}
+
+function stopMusicPlayback() {
+  musicPlaying = false;
+  clearInterval(musicProgressInterval);
+  if(musicNoteTimeout) clearTimeout(musicNoteTimeout);
+  musicOscNodes.forEach(n=>{ try{n.stop();}catch(e){} });
+  musicOscNodes = [];
+}
+
+function startMusicPlayback() {
+  stopMusicPlayback();
+  musicPlaying = true;
+  musicProgressPct = 0;
+  document.getElementById('music-progress-fill').style.width = '0%';
+
+  // Calculate distortion based on karma (bad karma = distorted music)
+  musicDistortLevel = Math.max(0, (-karma) / 10); // 0 to 1
+
+  playTrackNotes();
+
+  // Progress bar simulation
+  const totalMs = 60000; // simulate 1 min
+  const step = 100;
+  musicProgressInterval = setInterval(()=>{
+    musicProgressPct += (step/totalMs)*100;
+    if(musicProgressPct >= 100) {
+      musicProgressPct = 0;
+      nextTrack();
+    }
+    document.getElementById('music-progress-fill').style.width = musicProgressPct+'%';
+  }, step);
+}
+
+function playTrackNotes() {
+  if(!musicPlaying) return;
+  const tr = TRACKS[currentTrack];
+  const ctx = getAudioCtx();
+  let time = ctx.currentTime;
+
+  tr.notes.forEach((note, i)=>{
+    const [freq, dur] = note;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.connect(g); g.connect(ctx.destination);
+    osc.type = 'square';
+
+    // Apply distortion based on musicDistortLevel (bad karma)
+    const pitchShift = 1 + (musicDistortLevel * (Math.random()*0.12 - 0.06));
+    const timeShift = musicDistortLevel * (Math.random()*0.08);
+    const startT = time + timeShift;
+    const adjustedFreq = freq * pitchShift;
+
+    osc.frequency.setValueAtTime(adjustedFreq, startT);
+    g.gain.setValueAtTime(0, startT);
+    g.gain.linearRampToValueAtTime(0.08 * masterVolume * (1-musicDistortLevel*0.3), startT + 0.02);
+    g.gain.setValueAtTime(0.08 * masterVolume * (1-musicDistortLevel*0.3), startT + dur - 0.03);
+    g.gain.linearRampToValueAtTime(0, startT + dur);
+    osc.start(startT); osc.stop(startT + dur + 0.05);
+    musicOscNodes.push(osc);
+
+    time += dur * (1 + musicDistortLevel * (Math.random()*0.05));
+  });
+
+  // Loop
+  const totalDur = tr.notes.reduce((a,n)=>a+n[1],0)*1000;
+  if(musicPlaying) {
+    musicNoteTimeout = setTimeout(()=>{ if(musicPlaying) playTrackNotes(); }, totalDur + 200);
+  }
+}
+
+function nextTrack() {
+  currentTrack = (currentTrack+1) % TRACKS.length;
+  if(musicPlaying) { stopMusicPlayback(); startMusicPlayback(); }
+  renderPlaylist(); updateMusicUI();
+}
+function prevTrack() {
+  currentTrack = (currentTrack-1+TRACKS.length) % TRACKS.length;
+  if(musicPlaying) { stopMusicPlayback(); startMusicPlayback(); }
+  renderPlaylist(); updateMusicUI();
+}
+
+// adjustKarma with music distortion update
+function adjustKarma(delta) {
+  karma = Math.max(-10, Math.min(10, karma+delta));
+  updateAtmosphere();
+  if(karma <= -6 && !heartbeatInterval) {
+    startHeartbeat();
+    setStaticVolume(0.08);
+    showNarrator('El sistema te observa. ¿Eres parte del problema o parte de la solución?', 'bottom');
+  }
+  // Update music distortion level live
+  musicDistortLevel = Math.max(0, (-karma) / 10);
+}
+
+// ─── WEB APP ───
+const WEB_QUOTES = [
+  'En internet cualquiera puede ser anónimo, pero las personas afectadas no sufren bajo el anonimato — sufren en la vida real.',
+  'La pantalla protege al agresor, no a la víctima. El dolor digital es tan real como el físico.',
+  'Detrás de cada perfil hay una persona real. El anonimato no borra la responsabilidad.',
+  'Lo que se publica en internet nunca desaparece del todo. Las capturas de pantalla son eternas.',
+  'La víctima de ciberbullying no puede "desconectarse" del dolor. La app se cierra; las cicatrices no.',
+  'En Colombia, el ciberbullying tiene consecuencias legales reales. Ley 1620 de 2013.',
+  'El agresor digital piensa que está protegido. Las IPs, los metadatos y los testimonios cuentan otra historia.',
+  'El internet amplifica el acoso: lo que antes llegaba a 30 personas, ahora llega a miles.',
+];
+
+function buildWebResults(query) {
+  const lower = normalizeText(query);
+  const shared = [
+    { url:'ayuda-escolar.local', title:'Ruta de atención inmediata', snippet:'Habla con coordinación, guarda capturas, no borres evidencia y busca un adulto de confianza.' },
+    { url:'convivencia.local', title:'Qué cuenta como ciberbullying', snippet:'No es solo insultar: también reenviar, exponer, editar fotos o quedarse callado mientras otros humillan.' }
+  ];
+  if(lower.includes('cyberbullying') || lower.includes('ciberbullying')) {
+    return [
+      { url:'orientacion.local', title:'Cyberbullying: señales, daño y cómo frenarlo', snippet:'Si participaste o te quedaste callado, todavía puedes cortar la cadena asumiendo responsabilidad y reparando.' },
+      { url:'ley1620.local', title:'Ley 1620 y convivencia escolar', snippet:'Las instituciones deben activar rutas de convivencia, apoyo psicosocial y seguimiento del caso.' },
+      { url:'reflexion.local', title:'Qué hacer después de ver daño real', snippet:'Pedir perdón ayuda, pero no reemplaza actuar, decir la verdad y proteger a la víctima.' },
+      ...shared
+    ];
+  }
+  if(lower.includes('camila')) {
+    return [
+      { url:'resultado.local', title:'No se encontraron perfiles verificables', snippet:'Buscar el nombre de una compañera en medio del acoso también puede volverse otra forma de invadirla.' },
+      { url:'ayuda-escolar.local', title:'Mejor búsqueda sugerida', snippet:'Prueba con "cómo apoyar a una compañera acosada" o "cómo reparar daño digital".' },
+      ...shared
+    ];
+  }
+  if(lower.includes('ley 1620') || lower.includes('ley1620')) {
+    return [
+      { url:'normativa.local', title:'Ley 1620 explicada en lenguaje sencillo', snippet:'Promueve rutas de atención, comités de convivencia y acciones pedagógicas para proteger a la víctima.' },
+      { url:'colegio.local', title:'Qué puede hacer coordinación', snippet:'Citar acudientes, activar seguimiento, aplicar sanciones y proteger a la estudiante afectada.' },
+      ...shared
+    ];
+  }
+  return [
+    { url:'busqueda.local', title:'No hay una sola respuesta simple', snippet:'Pero sí hay primeras acciones claras: detener la difusión, guardar evidencia, decir la verdad y acompañar.' },
+    ...shared
+  ];
+}
+
+function renderWebResults(query) {
+  const results = buildWebResults(query);
+  const container = document.getElementById('web-results');
+  container.innerHTML = results.map(result => `
+    <div class="web-result-card">
+      <div class="web-result-url">${result.url}</div>
+      <div class="web-result-title">${result.title}</div>
+      <div class="web-result-snippet">${result.snippet}</div>
+    </div>
+  `).join('');
+  container.style.display = 'flex';
+}
+
+function openWeb() {
+  prevScreen = getCurrentScreenName();
+  showScreen('web');
+  document.getElementById('web-url-input').value = '';
+  document.getElementById('web-loading').style.display='none';
+  document.getElementById('web-error-msg').style.display='none';
+  document.getElementById('web-home-content').style.display='block';
+  document.getElementById('web-results').style.display='none';
+}
+
+function handleWebSearch(e) {
+  if(e.key==='Enter') doWebSearch();
+}
+
+function searchWeb(query) {
+  document.getElementById('web-url-input').value = query;
+  doWebSearch();
+}
+
+function doWebSearch() {
+  const query = document.getElementById('web-url-input').value.trim();
+  if(!query) return;
+  const lower = normalizeText(query);
+
+  document.getElementById('web-home-content').style.display='none';
+  document.getElementById('web-results').style.display='none';
+  document.getElementById('web-error-msg').style.display='none';
+  document.getElementById('web-loading').style.display='flex';
+
+  setTimeout(()=>{
+    document.getElementById('web-loading').style.display='none';
+    renderWebResults(query);
+    const quote = WEB_QUOTES[Math.floor(Math.random()*WEB_QUOTES.length)];
+    document.getElementById('web-error-quote').textContent = quote;
+    document.getElementById('web-error-msg').style.display='flex';
+
+    if(lower.includes('camila') || lower.includes('foto')) adjustKarma(-1);
+    if((lower.includes('cyberbullying') || lower.includes('ciberbullying')) && badEndingPending && !finalReflectionShown) {
+      setTimeout(()=>showFinal('reflection'), 900);
+    }
+    showNarrator('El internet es el lugar más fácil para hacer daño y el más difícil para escapar de él.','bottom',5000);
+  }, 1800 + Math.random()*1000);
+}
+
+// ─── BOOT ───
+function startGame() {
+  document.getElementById('screen-start').style.display='none';
+  document.getElementById('phone-wrapper').style.display='block';
+
+  // Start static at low volume
+  setTimeout(()=>{
+    startStatic(0.015);
+    // Show first notification after a beat
+    setTimeout(()=>{
+      const lockNotif = document.getElementById('lock-notification');
+      lockNotif.style.display='block';
+      playTone('notif');
+      showNarrator('El celular vibra en tu bolsillo. Un grupo de WhatsApp. Algo pasó.', 'bottom', 5000);
+    }, 1200);
+  }, 800);
+}
+</script>
+</body>
+</html>
