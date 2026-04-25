@@ -3810,8 +3810,7 @@ function startMusicPlayback() {
 
   playTrackNotes();
 
-  // Progress bar simulation — duración real ajustada al BPM del track
-  // Progress bar — duración total = duración de una vuelta × repeatCount (0 = infinito → 1 vuelta visual)
+  // Progress bar — totalMs = una vuelta × repeatCount (0 = loop visual infinito)
   const tr_dur = TRACKS[currentTrack];
   const bpmScaleProg = BPM / (tr_dur.bpm || BPM);
   const oneLapMs = tr_dur.notes.reduce((a, n) => a + n[1] * bpmScaleProg, 0) * 1000;
@@ -3821,14 +3820,10 @@ function startMusicPlayback() {
   musicProgressInterval = setInterval(()=>{
     musicProgressPct += (step / totalMs) * 100;
     if(musicProgressPct >= 100) {
-      musicProgressPct = 0;
-      if(repeats === 0) {
-        // loop infinito — reinicia la barra visualmente
-      } else {
-        nextTrack();
-      }
+      musicProgressPct = repeats === 0 ? 0 : 100;
+      clearInterval(musicProgressInterval);
     }
-    document.getElementById('music-progress-fill').style.width = musicProgressPct+'%';
+    document.getElementById('music-progress-fill').style.width = musicProgressPct + '%';
   }, step);
 }
 
