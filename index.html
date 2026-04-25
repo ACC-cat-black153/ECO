@@ -3866,9 +3866,14 @@ function playTrackNotes() {
   });
 
   // Loop: esperar duracion real total antes de repetir
+// Loop: respetar repeatCount (0 = infinito, N = N veces en total)
   const totalDur = tr.notes.reduce((a, n) => a + n[1] * bpmScale, 0) * 1000;
-  if(musicPlaying) {
-    musicNoteTimeout = setTimeout(() => { if(musicPlaying) playTrackNotes(); }, totalDur + 200);
+  const maxRepeats = tr.repeatCount || 0;
+  const nextRepeat = (repeatsDone || 0) + 1;
+  if(musicPlaying && (maxRepeats === 0 || nextRepeat < maxRepeats)) {
+    musicNoteTimeout = setTimeout(() => { if(musicPlaying) playTrackNotes(nextRepeat); }, totalDur + 200);
+  } else if(musicPlaying && maxRepeats > 0) {
+    musicNoteTimeout = setTimeout(() => { if(musicPlaying) nextTrack(); }, totalDur + 200);
   }
 }
 
