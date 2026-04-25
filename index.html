@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <link rel="icon" type="image/x-icon" href="eco.ico">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>El Eco del Silencio — Sopó</title>
@@ -3500,26 +3499,24 @@ function startMusicPlayback() {
 
   playTrackNotes();
 
-  // Progress bar — totalMs = una vuelta × repeatCount (0 = loop visual infinito)
+  // Progress bar simulation — duración real ajustada al BPM del track
   const tr_dur = TRACKS[currentTrack];
   const bpmScaleProg = BPM / (tr_dur.bpm || BPM);
-  const oneLapMs = tr_dur.notes.reduce((a, n) => a + n[1] * bpmScaleProg, 0) * 1000;
-  const repeats = tr_dur.repeatCount || 0;
-  const totalMs = Math.max(5000, oneLapMs * (repeats > 0 ? repeats : 1));
+  const totalMs = Math.max(5000, tr_dur.notes.reduce((a, n) => a + n[1] * bpmScaleProg, 0) * 1000);
   const step = 100;
   musicProgressInterval = setInterval(()=>{
-    musicProgressPct += (step / totalMs) * 100;
+    musicProgressPct += (step/totalMs)*100;
     if(musicProgressPct >= 100) {
-      musicProgressPct = repeats === 0 ? 0 : 100;
-      clearInterval(musicProgressInterval);
+      musicProgressPct = 0;
+      nextTrack();
     }
-    document.getElementById('music-progress-fill').style.width = musicProgressPct + '%';
+    document.getElementById('music-progress-fill').style.width = musicProgressPct+'%';
   }, step);
 }
 
 function playTrackNotes(repeatsDone) {
-  repeatsDone = repeatsDone || 0;
   if(!musicPlaying || !musicMasterGain) return;
+  repeatsDone = repeatsDone || 0;
   const tr = TRACKS[currentTrack];
   const ctx = getAudioCtx();
   let time = ctx.currentTime;
@@ -3558,14 +3555,15 @@ function playTrackNotes(repeatsDone) {
 
     time += dur * (1 + musicDistortLevel * (Math.random()*0.05));
   });
-    
-// Loop: respetar repeatCount (0 = infinito, N = N veces en total)
+
+  // Loop: respetar repeatCount (0 = infinito, N = N veces en total)
   const totalDur = tr.notes.reduce((a, n) => a + n[1] * bpmScale, 0) * 1000;
-  const maxRepeats = tr.repeatCount || 0;
-  const nextRepeat = (repeatsDone || 0) + 1;
+  const maxRepeats = tr.repeatCount || 0; // 0 = infinito
+  const nextRepeat = repeatsDone + 1;
   if(musicPlaying && (maxRepeats === 0 || nextRepeat < maxRepeats)) {
     musicNoteTimeout = setTimeout(() => { if(musicPlaying) playTrackNotes(nextRepeat); }, totalDur + 200);
   } else if(musicPlaying && maxRepeats > 0) {
+    // Terminó las repeticiones → pasar al siguiente track
     musicNoteTimeout = setTimeout(() => { if(musicPlaying) nextTrack(); }, totalDur + 200);
   }
 }
