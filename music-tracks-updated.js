@@ -63,7 +63,7 @@ const TRACKS = [
     bpm: 100,
     beatUnit: 'NEGRA',
     meter: [3, 4],
-    repeatCount: 1,
+    repeatCount: 4,
     loopStart: 0,
     notes: [
       [NOTE.FS5, DUR.CORCHEA],
