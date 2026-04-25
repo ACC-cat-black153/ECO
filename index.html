@@ -3827,7 +3827,8 @@ function startMusicPlayback() {
   }, step);
 }
 
-function playTrackNotes() {
+function playTrackNotes(repeatsDone) {
+  repeatsDone = repeatsDone || 0;
   if(!musicPlaying || !musicMasterGain) return;
   const tr = TRACKS[currentTrack];
   const ctx = getAudioCtx();
@@ -3867,8 +3868,7 @@ function playTrackNotes() {
 
     time += dur * (1 + musicDistortLevel * (Math.random()*0.05));
   });
-
-  // Loop: esperar duracion real total antes de repetir
+    
 // Loop: respetar repeatCount (0 = infinito, N = N veces en total)
   const totalDur = tr.notes.reduce((a, n) => a + n[1] * bpmScale, 0) * 1000;
   const maxRepeats = tr.repeatCount || 0;
