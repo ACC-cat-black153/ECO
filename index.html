@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <link rel="icon" type="image/x-icon" href="eco.ico">
+      <link rel="icon" type="image/x-icon" href="eco.ico">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>El Eco del Silencio — Sopó</title>
@@ -3500,9 +3500,10 @@ function startMusicPlayback() {
 
   playTrackNotes();
 
-  // Progress bar simulation — use real note duration from track data
+  // Progress bar simulation — duración real ajustada al BPM del track
   const tr_dur = TRACKS[currentTrack];
-  const totalMs = Math.max(5000, tr_dur.notes.reduce((a, n) => a + n[1], 0) * 1000);
+  const bpmScaleProg = BPM / (tr_dur.bpm || BPM);
+  const totalMs = Math.max(5000, tr_dur.notes.reduce((a, n) => a + n[1] * bpmScaleProg, 0) * 1000);
   const step = 100;
   musicProgressInterval = setInterval(()=>{
     musicProgressPct += (step/totalMs)*100;
@@ -3520,18 +3521,28 @@ function playTrackNotes() {
   const ctx = getAudioCtx();
   let time = ctx.currentTime;
 
-  tr.notes.forEach((note, i)=>{
-    const [freq, dur] = note;
+  // Las constantes DUR.* se calcularon con BPM=96 (global del archivo).
+  // Cada track tiene su propio BPM, así que escalamos la duracion de cada nota.
+  const bpmScale = BPM / (tr.bpm || BPM);
+
+  tr.notes.forEach((note) => {
+    const [freq, rawDur] = note;
+    const dur = rawDur * bpmScale;
+
+    // REST (freq 0) - solo avanzar tiempo, sin oscilador
+    if (freq === 0) {
+      time += dur;
+      return;
+    }
+
     const osc = ctx.createOscillator();
     const g = ctx.createGain();
-    // connect osc → per-note gain → shared master gain (not directly to destination)
     osc.connect(g); g.connect(musicMasterGain);
     osc.type = 'square';
 
-    // Apply distortion based on musicDistortLevel (bad karma)
     const pitchShift = 1 + (musicDistortLevel * (Math.random()*0.12 - 0.06));
-    const timeShift = musicDistortLevel * (Math.random()*0.08);
-    const startT = time + timeShift;
+    const timeShift  = musicDistortLevel * (Math.random()*0.08);
+    const startT     = time + timeShift;
     const adjustedFreq = freq * pitchShift;
 
     osc.frequency.setValueAtTime(adjustedFreq, startT);
@@ -3545,10 +3556,10 @@ function playTrackNotes() {
     time += dur * (1 + musicDistortLevel * (Math.random()*0.05));
   });
 
-  // Loop
-  const totalDur = tr.notes.reduce((a,n)=>a+n[1],0)*1000;
+  // Loop: esperar duracion real total antes de repetir
+  const totalDur = tr.notes.reduce((a, n) => a + n[1] * bpmScale, 0) * 1000;
   if(musicPlaying) {
-    musicNoteTimeout = setTimeout(()=>{ if(musicPlaying) playTrackNotes(); }, totalDur + 200);
+    musicNoteTimeout = setTimeout(() => { if(musicPlaying) playTrackNotes(); }, totalDur + 200);
   }
 }
 
