@@ -1,1 +1,42 @@
+name: Build y Deploy
 
+on:
+  push:
+    branches: [main]          # cambia a "master" si ese es tu branch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fusionar JS en HTML
+        run: |
+          python3 - <<'EOF'
+          with open('index.html', 'r', encoding='utf-8') as f:
+              html = f.read()
+
+          with open('music-tracks-updated.js', 'r', encoding='utf-8') as f:
+              js = f.read()
+
+          tag = '<script src="music-tracks-updated.js"></script>'
+          inline = '<script>\n' + js + '\n</script>'
+
+          if tag not in html:
+              raise SystemExit('ERROR: no se encontró el tag del script en index.html')
+
+          result = html.replace(tag, inline)
+
+          import os
+          os.makedirs('dist', exist_ok=True)
+          with open('dist/index.html', 'w', encoding='utf-8') as f:
+              f.write(result)
+
+          print('✓ dist/index.html generado correctamente')
+          EOF
+
+      - name: Deploy a GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
